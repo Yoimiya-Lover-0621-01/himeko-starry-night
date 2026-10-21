@@ -1146,6 +1146,85 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
   border-color: rgba(139, 130, 245, 0.60) !important;
 }
 
+/* ===== Monet switches + icon-button highlights ========================
+   The stock Switch paints a flat border token / brand fill, and small icon
+   buttons (refresh, clear, detail actions) hover with the bare interactive
+   token. Give both the liquid-glass treatment: Monet periwinkle gradient on
+   the checked track, a glass thumb, and a frosted rim on icon hover. */
+[class~="_switch_1ik0f_5"] {
+  background: rgba(120, 128, 200, 0.20) !important;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+[class~="_switch_1ik0f_5"][aria-checked="true"] {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.04) 45%,
+      rgba(255, 255, 255, 0) 60%,
+      rgba(0, 0, 0, 0.08) 100%
+    ),
+    linear-gradient(135deg, #6b62e8 0%, #8b82f5 55%, #a99fff 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.30),
+    0 2px 10px rgba(107, 98, 232, 0.42) !important;
+}
+[class~="_switch_1ik0f_5"]:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.22),
+    0 0 0 3px rgba(139, 130, 245, 0.10) !important;
+}
+[class~="_thumb_1ik0f_33"] {
+  background:
+    radial-gradient(circle at 35% 28%, #ffffff 0%, #eef0ff 48%, #d3d7ff 100%) !important;
+  box-shadow:
+    0 1px 2px rgba(6, 8, 24, 0.35),
+    0 0 0 0.5px rgba(255, 255, 255, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+:is(
+  [class~="fO69Vq_iconButton"],
+  [class~="S0jZwq_detailIconButton"],
+  [class~="S0jZwq_searchClear"]
+):hover:not(:disabled) {
+  background-color: transparent !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.08) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.18) !important;
+  border-radius: 10px !important;
+  color: var(--dsw-alias-label-primary, #f1f2ff) !important;
+}
+
+/* Generic tooltips (role="tooltip") float over the artwork too — give them a
+   small navy glass bubble instead of the stock grey box. */
+[role="tooltip"] {
+  background: rgba(30, 34, 78, 0.92) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  backdrop-filter: blur(40px) saturate(160%);
+  border-radius: 8px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
+    0 10px 24px rgba(0, 0, 0, 0.30) !important;
+}
+
 `;
 
     function NebulaWallpaper() {
