@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Star nebula wallpaper - browser half.
  *
  *  - `html` keeps a solid night fallback; `body` and `#root` stay transparent;
@@ -99,6 +99,17 @@ body[data-ds-dark-theme] {
    notch beside the brand, so square the chrome corner in wallpaper mode. */
 html[data-windows-titlebar] [class*="_centerCol"] {
   border-radius: 0 !important;
+}
+/* Native window controls (minimize / restore / close). The desktop preload
+   samples a hidden probe span whose fill is --dsw-specific-sidebar-fill and
+   forwards that colour to Electron's title-bar overlay, which then paints an
+   opaque-ish film over the artwork in the top-right corner — the visible
+   "colour step" beside the three buttons, and the reason each button seems to
+   sit on a different shade. Force the probe transparent: the overlay becomes
+   transparent too, the caption buttons float directly on the nebula, and the
+   three glyphs share one continuous backdrop. */
+body > span[style*="var(--dsw-specific-sidebar-fill)"] {
+  background-color: rgba(0, 0, 0, 0) !important;
 }
 /*
  * Liquid-glass surfaces: frosted blur, saturated artwork behind, soft sheen.
@@ -675,6 +686,57 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
       return h('style', { 'data-dsh-plugin': 'star-wallpaper' }, CSS);
     }
 
+    /* The Windows title-bar menu buttons ("应用" / "编辑") are built by the
+       desktop preload inside a shadow root, so the page stylesheet cannot see
+       them. Their hover/expanded paint uses the shared interactive token, but
+       the preload's own rule keeps a flat grey pill; inject the same liquid
+       glass row material the rest of the theme uses directly into that shadow
+       root. No DOM behaviour is touched — visual only. */
+    const MENU_BAR_STYLE = `
+      button {
+        border-radius: 9px !important;
+      }
+      button:hover, button[aria-expanded="true"] {
+        background-image: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.14) 0%,
+          rgba(255, 255, 255, 0.04) 40%,
+          rgba(255, 255, 255, 0.02) 62%,
+          rgba(255, 255, 255, 0.08) 100%
+        ) !important;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.40),
+          inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+          0 2px 8px rgba(0, 0, 0, 0.18) !important;
+        color: var(--dsw-alias-label-primary) !important;
+      }
+    `;
+
+    function styleMenuBar() {
+      const host = document.querySelector('[data-windows-menu]');
+      const root = host && host.shadowRoot;
+      if (!root) return false;
+      if (root.querySelector('style[data-dsh-plugin="star-wallpaper-menubar"]')) return true;
+      const style = document.createElement('style');
+      style.setAttribute('data-dsh-plugin', 'star-wallpaper-menubar');
+      style.textContent = MENU_BAR_STYLE;
+      root.append(style);
+      return true;
+    }
+
+    /* Re-announce the palette once the stylesheet is live so the desktop
+       preload re-samples its caption probe (the transparent probe above turns
+       the native title-bar overlay transparent without waiting for the next
+       theme toggle). */
+    function refreshCaptionProbe() {
+      try {
+        const body = document.body;
+        if (!body) return;
+        body.style.setProperty('--dsw-caption-probe-tick', '1');
+        body.style.removeProperty('--dsw-caption-probe-tick');
+      } catch {}
+    }
+
     return {
       inject: ['slots'],
       apply(ctx) {
@@ -690,6 +752,23 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
           lockDark();
           ctx.on('theme/change', lockDark);
         }
+        // Title-bar menu glass + transparent native caption overlay.
+        const startMenuBar = () => {
+          if (styleMenuBar()) return;
+          let tries = 0;
+          const timer = setInterval(() => {
+            tries += 1;
+            if (styleMenuBar() || tries > 80) clearInterval(timer);
+          }, 250);
+        };
+        startMenuBar();
+        setTimeout(refreshCaptionProbe, 120);
+        setTimeout(refreshCaptionProbe, 1500);
+        const menuObserver = new MutationObserver(() => styleMenuBar());
+        try {
+          menuObserver.observe(document.body, { childList: true });
+        } catch {}
+        ctx.on('dispose', () => menuObserver.disconnect());
         ctx.slots.inject('shell.overlay', () => ctx.slots.register({
           name: 'shell.overlay',
           id: 'star-wallpaper',
