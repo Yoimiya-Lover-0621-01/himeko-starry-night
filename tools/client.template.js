@@ -1019,6 +1019,133 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
   color: rgba(255, 255, 255, 0.55) !important;
 }
 
+/* ===== Plugins page (ui-plugin-manager) & Automation page (ui-schedule) ====
+   Both pages paint their row highlights and pills with the bare interactive
+   token, which reads as flat grey-blue blocks over the artwork. Use the same
+   liquid-glass row/pill recipe as the sidebar and secondary menus, and give
+   their buttons a glass sheen without changing the brand hue. */
+[class~="fO69Vq_cardLink"]:hover,
+[class~="fO69Vq_row"]:hover,
+[class~="fO69Vq_rowOpen"]:hover,
+[class~="S0jZwq_row"]:hover,
+[class~="S0jZwq_selectedRow"] {
+  border-radius: 12px !important;
+  background-color: transparent !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.08) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+/* Rows must not stack a second glass layer on their inner lines/buttons. */
+[class~="fO69Vq_cardLink"] [class~="fO69Vq_cardOpen"]:hover,
+[class~="fO69Vq_row"] :is([class~="fO69Vq_rowLine"], [class~="fO69Vq_rowMain"]):hover,
+[class~="S0jZwq_row"] [class~="S0jZwq_rowContent"]:hover {
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* Plugins page: split "添加插件" button (primary + dropdown half). */
+:is(
+  [class~="fO69Vq_addButton"],
+  [class~="fO69Vq_addPrimary"],
+  [class~="fO69Vq_addMore"]
+) {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.30) 0%,
+    rgba(255, 255, 255, 0.05) 44%,
+    rgba(255, 255, 255, 0) 56%,
+    rgba(0, 0, 0, 0.10) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.25),
+    0 6px 16px rgba(30, 32, 110, 0.30) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+}
+:is(
+  [class~="fO69Vq_addButton"],
+  [class~="fO69Vq_addPrimary"],
+  [class~="fO69Vq_addMore"]
+):hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.30),
+    0 8px 20px rgba(40, 44, 140, 0.38) !important;
+}
+
+/* Automation page: primary "新建" + secondary empty-state action. */
+[class~="S0jZwq_newButton"] {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.30) 0%,
+    rgba(255, 255, 255, 0.05) 44%,
+    rgba(255, 255, 255, 0) 56%,
+    rgba(0, 0, 0, 0.10) 100%
+  ) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.25),
+    0 6px 16px rgba(30, 32, 110, 0.30) !important;
+}
+[class~="S0jZwq_emptyAction"] {
+  background-color: rgba(150, 160, 255, 0.10) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.02) 48%,
+    rgba(255, 255, 255, 0.06) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16) !important;
+}
+[class~="S0jZwq_emptyAction"]:hover:not(:disabled) {
+  background-color: rgba(150, 160, 255, 0.18) !important;
+}
+
+/* Automation page: filter pills ("全部 / 已开启 / 已结束"). */
+[class~="S0jZwq_filterTab"] {
+  border-radius: 12px !important;
+}
+[class~="S0jZwq_filterTab"]:hover,
+[class~="S0jZwq_filterTab"][class~="S0jZwq_filterTabActive"] {
+  background-color: transparent !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.08) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.18) !important;
+  color: var(--dsw-alias-label-primary, #f1f2ff) !important;
+}
+
+/* Automation page: search field sits on the artwork — give it a glass bed. */
+[class~="S0jZwq_searchField"] {
+  background: rgba(14, 16, 44, 0.42) !important;
+  border-color: rgba(160, 168, 255, 0.18) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+}
+[class~="S0jZwq_searchField"]:focus-within {
+  border-color: rgba(139, 130, 245, 0.60) !important;
+}
+
 `;
 
     function NebulaWallpaper() {
