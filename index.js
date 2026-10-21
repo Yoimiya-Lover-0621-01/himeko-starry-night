@@ -157,7 +157,7 @@ ${spinnerRule}
   color: rgba(190, 193, 236, 0.88);
 }
 [data-dsh-boot]::after {
-  content: "姬子的星月夜 · HIMEKO'S STARRY NIGHT";
+  content: "HONKAI STAR RAIL";
   position: fixed;
   left: 50%;
   bottom: 26px;
@@ -165,10 +165,10 @@ ${spinnerRule}
   pointer-events: none;
   white-space: nowrap;
   font-family: Montserrat, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 16px;
-  letter-spacing: 0.22em;
-  color: rgba(150, 155, 200, 0.55);
+  letter-spacing: 0.34em;
+  color: rgba(160, 165, 210, 0.62);
 }
 @keyframes swt-boot-fade {
   from { opacity: 0; }
