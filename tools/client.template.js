@@ -680,6 +680,189 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
   box-shadow: none !important;
 }
 
+/* ===== Self-drawn title-bar menus =====================================
+   The desktop preload opens native (Chromium-drawn, grey, square) popup
+   menus for 「应用 / 编辑」. The plugin intercepts those buttons and paints
+   the same deep-navy frosted glass used by every other secondary menu, so
+   the title bar finally matches the rest of the theme. */
+.swt-menu {
+  position: fixed;
+  z-index: 1400;
+  min-width: 216px;
+  max-width: 340px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(45, 50, 100, 0.90);
+  -webkit-backdrop-filter: blur(84px) saturate(180%);
+  backdrop-filter: blur(84px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
+    0 18px 40px rgba(0, 0, 0, 0.34);
+  opacity: 0;
+  transform: translateY(-4px) scale(0.985);
+  transform-origin: top left;
+  transition: opacity 90ms ease, transform 120ms cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  will-change: opacity, transform;
+}
+.swt-menu.is-open {
+  opacity: 1;
+  transform: none;
+}
+.swt-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 34px;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary, #f1f2ff);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  cursor: default;
+  outline: none;
+}
+.swt-menu-item:hover,
+.swt-menu-item.is-active,
+.swt-menu-item:focus-visible {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.18);
+  color: var(--dsw-alias-label-primary, #f1f2ff);
+}
+.swt-menu-key {
+  margin-left: auto;
+  color: var(--dsw-alias-label-tertiary, #9ba1d9);
+  font-size: 12px;
+  letter-spacing: 0.01em;
+}
+.swt-menu-sep {
+  height: 1px;
+  margin: 5px 10px;
+  background: rgba(160, 168, 255, 0.16);
+}
+
+/* ===== Settings sections: About / Exit ================================ */
+.sws-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0 10px;
+}
+.sws-card {
+  border-radius: 16px;
+  padding: 18px 20px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.055) 0%,
+      rgba(255, 255, 255, 0) 34%,
+      rgba(255, 255, 255, 0.02) 100%
+    ),
+    rgba(24, 27, 70, 0.44);
+  -webkit-backdrop-filter: blur(60px) saturate(160%);
+  backdrop-filter: blur(60px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    0 10px 24px rgba(0, 0, 0, 0.20);
+}
+.sws-wordmark {
+  font-size: 26px;
+  line-height: 34px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  color: #ffffff;
+}
+.sws-tagline {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-tertiary, #9ba1d9);
+}
+.sws-rows {
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(24, 27, 70, 0.34);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+}
+.sws-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 16px;
+}
+.sws-row + .sws-row {
+  border-top: 0.5px solid rgba(160, 168, 255, 0.14);
+}
+.sws-row-label {
+  flex: none;
+  font-size: 13px;
+  color: var(--dsw-alias-label-secondary, #c4c9f2);
+}
+.sws-row-value {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary, #f1f2ff);
+  text-align: right;
+}
+.sws-title {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--dsw-alias-label-primary, #f1f2ff);
+}
+.sws-desc {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 21px;
+  color: var(--dsw-alias-label-secondary, #c4c9f2);
+}
+.sws-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.sws-btn {
+  appearance: none;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(58, 84, 255, 0.82);
+  color: #ffffff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.20),
+    0 4px 14px rgba(0, 0, 0, 0.18);
+}
+.sws-btn:hover:not(:disabled) {
+  background: rgba(80, 108, 255, 0.92);
+}
+.sws-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 `;
 
     function NebulaWallpaper() {
@@ -737,6 +920,453 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
       } catch {}
     }
 
+    /* ------------------------------------------------------------------
+       Self-drawn title-bar menus.
+       The desktop preload owns the 「应用 / 编辑」 buttons (inside a shadow
+       root) and, on click, shells out to a native Electron popup menu that
+       no page CSS can reach. Intercept those clicks in the capture phase
+       before the preload handler runs, suppress the native popup, and draw
+       the same deep-navy frosted glass every other secondary menu uses.
+       ------------------------------------------------------------------ */
+    const tr = (zh, en) =>
+      String(document.documentElement.lang || 'zh').toLowerCase().startsWith('en') ? en : zh;
+
+    let openMenuState = null;
+    const boundMenuHosts = new WeakSet();
+
+    function rememberFocusState() {
+      try {
+        const el = document.activeElement;
+        const state = {
+          el: el instanceof HTMLElement ? el : null,
+          start: null,
+          end: null,
+          direction: null,
+          ranges: [],
+        };
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+          state.start = el.selectionStart;
+          state.end = el.selectionEnd;
+          state.direction = el.selectionDirection ?? null;
+        }
+        const selection = document.getSelection();
+        if (selection) {
+          for (let index = 0; index < selection.rangeCount; index += 1) {
+            state.ranges.push(selection.getRangeAt(index).cloneRange());
+          }
+        }
+        return state;
+      } catch {
+        return null;
+      }
+    }
+
+    function restoreFocusState(state) {
+      if (!state) return;
+      try {
+        const el = state.el;
+        if (el && el.isConnected && typeof el.focus === 'function') {
+          el.focus({ preventScroll: true });
+          if (
+            (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) &&
+            state.start !== null &&
+            state.start !== undefined
+          ) {
+            el.setSelectionRange(state.start, state.end ?? state.start, state.direction ?? undefined);
+            return;
+          }
+        }
+        const selection = document.getSelection();
+        if (selection && state.ranges.length > 0) {
+          selection.removeAllRanges();
+          for (const range of state.ranges) selection.addRange(range);
+        }
+      } catch {}
+    }
+
+    function runEditCommand(command, remembered) {
+      restoreFocusState(remembered);
+      try {
+        document.execCommand(command, false);
+      } catch {}
+    }
+
+    function runEditSelectAll(remembered) {
+      restoreFocusState(remembered);
+      const el = document.activeElement;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+        try {
+          el.select();
+          return;
+        } catch {}
+      }
+      try {
+        document.execCommand('selectAll', false);
+      } catch {}
+    }
+
+    function runEditPaste(remembered) {
+      const read = navigator.clipboard && typeof navigator.clipboard.readText === 'function'
+        ? navigator.clipboard.readText().catch(() => '')
+        : Promise.resolve('');
+      Promise.resolve(read).then((text) => {
+        restoreFocusState(remembered);
+        const el = document.activeElement;
+        const editable =
+          el instanceof HTMLInputElement ||
+          el instanceof HTMLTextAreaElement ||
+          (el instanceof HTMLElement && el.isContentEditable);
+        if (editable && typeof text === 'string' && text.length > 0) {
+          try {
+            document.execCommand('insertText', false, text);
+            return;
+          } catch {}
+        }
+        try {
+          document.execCommand('paste', false);
+        } catch {}
+      });
+    }
+
+    function menuEntries(kind) {
+      if (kind === 'application') {
+        return [
+          {
+            label: tr('检查更新…', 'Check for Updates…'),
+            run: () => {
+              const api = window.dshDesktop;
+              if (api && api.updates && typeof api.updates.open === 'function') {
+                Promise.resolve(api.updates.open()).catch(() => {});
+              }
+            },
+          },
+        ];
+      }
+      return [
+        { label: tr('撤销', 'Undo'), key: 'Ctrl+Z', run: (state) => runEditCommand('undo', state) },
+        { label: tr('重做', 'Redo'), key: 'Ctrl+Y', run: (state) => runEditCommand('redo', state) },
+        { separator: true },
+        { label: tr('剪切', 'Cut'), key: 'Ctrl+X', run: (state) => runEditCommand('cut', state) },
+        { label: tr('复制', 'Copy'), key: 'Ctrl+C', run: (state) => runEditCommand('copy', state) },
+        { label: tr('粘贴', 'Paste'), key: 'Ctrl+V', run: (state) => runEditPaste(state) },
+        { label: tr('删除', 'Delete'), key: '', run: (state) => runEditCommand('delete', state) },
+        { separator: true },
+        { label: tr('全选', 'Select All'), key: 'Ctrl+A', run: (state) => runEditSelectAll(state) },
+      ];
+    }
+
+    function closeMenu() {
+      const state = openMenuState;
+      if (!state) return;
+      openMenuState = null;
+      state.menu.classList.remove('is-open');
+      if (state.anchor) state.anchor.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('pointerdown', state.onPointerDown, true);
+      document.removeEventListener('keydown', state.onKeyDown, true);
+      window.removeEventListener('blur', state.onWindowBlur);
+      window.removeEventListener('resize', state.onWindowBlur);
+      setTimeout(() => state.menu.remove(), 150);
+    }
+
+    function openMenu(host, kind, anchor) {
+      closeMenu();
+      const remembered = rememberFocusState();
+      const menu = document.createElement('div');
+      menu.className = 'swt-menu';
+      menu.setAttribute('role', 'menu');
+      menu.setAttribute('aria-label', kind === 'application' ? tr('应用', 'Application') : tr('编辑', 'Edit'));
+
+      const entries = [];
+      const buttons = [];
+      let activeIndex = -1;
+
+      const setActive = (index) => {
+        activeIndex = index;
+        buttons.forEach((button, buttonIndex) => {
+          button.classList.toggle('is-active', buttonIndex === activeIndex);
+        });
+      };
+      const moveActive = (delta) => {
+        if (buttons.length === 0) return;
+        const base = activeIndex < 0 ? (delta > 0 ? -1 : 0) : activeIndex;
+        const next = (base + delta + buttons.length) % buttons.length;
+        setActive(next);
+      };
+      const activate = (entry) => {
+        closeMenu();
+        try {
+          entry.run(remembered);
+        } catch (error) {
+          console.warn('star-wallpaper: title-bar menu action failed', error);
+        }
+      };
+
+      for (const entry of menuEntries(kind)) {
+        if (entry.separator) {
+          const separator = document.createElement('div');
+          separator.className = 'swt-menu-sep';
+          separator.setAttribute('role', 'separator');
+          menu.appendChild(separator);
+          continue;
+        }
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'swt-menu-item';
+        button.setAttribute('role', 'menuitem');
+        button.tabIndex = -1;
+        const label = document.createElement('span');
+        label.textContent = entry.label;
+        button.appendChild(label);
+        if (entry.key) {
+          const key = document.createElement('span');
+          key.className = 'swt-menu-key';
+          key.textContent = entry.key;
+          button.appendChild(key);
+        }
+        button.addEventListener('pointerdown', (event) => event.preventDefault());
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          activate(entry);
+        });
+        menu.appendChild(button);
+        entries.push(entry);
+        buttons.push(button);
+      }
+
+      document.body.appendChild(menu);
+      const rect = anchor.getBoundingClientRect();
+      const width = menu.offsetWidth;
+      let left = Math.round(rect.left);
+      if (left + width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - width - 8);
+      menu.style.left = left + 'px';
+      menu.style.top = Math.round(rect.bottom + 6) + 'px';
+      requestAnimationFrame(() => {
+        if (openMenuState && openMenuState.menu === menu) menu.classList.add('is-open');
+      });
+      anchor.setAttribute('aria-expanded', 'true');
+
+      const onPointerDown = (event) => {
+        const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+        if (path.includes(menu) || path.includes(host)) return;
+        closeMenu();
+      };
+      const onKeyDown = (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          closeMenu();
+          return;
+        }
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          event.stopPropagation();
+          moveActive(1);
+          return;
+        }
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          event.stopPropagation();
+          moveActive(-1);
+          return;
+        }
+        if (event.key === 'Home') {
+          event.preventDefault();
+          event.stopPropagation();
+          setActive(0);
+          return;
+        }
+        if (event.key === 'End') {
+          event.preventDefault();
+          event.stopPropagation();
+          setActive(buttons.length - 1);
+          return;
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          if (activeIndex >= 0 && entries[activeIndex]) {
+            event.preventDefault();
+            event.stopPropagation();
+            activate(entries[activeIndex]);
+          }
+          return;
+        }
+        if (event.key === 'Tab') closeMenu();
+      };
+      const onWindowBlur = () => closeMenu();
+
+      document.addEventListener('pointerdown', onPointerDown, true);
+      document.addEventListener('keydown', onKeyDown, true);
+      window.addEventListener('blur', onWindowBlur);
+      window.addEventListener('resize', onWindowBlur);
+
+      openMenuState = { host, kind, anchor, menu, remembered, onPointerDown, onKeyDown, onWindowBlur };
+    }
+
+    function menuButtonFrom(host, event) {
+      const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+      for (const node of path) {
+        if (
+          node instanceof HTMLElement &&
+          node.tagName === 'BUTTON' &&
+          node.getAttribute('role') === 'menuitem' &&
+          node.getRootNode() === host.shadowRoot
+        ) {
+          return node;
+        }
+      }
+      return null;
+    }
+
+    function menuKindFor(host, button) {
+      const buttons = host.shadowRoot
+        ? Array.from(host.shadowRoot.querySelectorAll('button[role="menuitem"]'))
+        : [];
+      return buttons.indexOf(button) === 0 ? 'application' : 'edit';
+    }
+
+    function bindMenuHost(host) {
+      if (!host || !host.shadowRoot || boundMenuHosts.has(host)) return;
+      boundMenuHosts.add(host);
+      const swallow = (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      };
+      host.addEventListener('pointerdown', (event) => {
+        if (menuButtonFrom(host, event)) swallow(event);
+      }, true);
+      host.addEventListener('mousedown', (event) => {
+        if (menuButtonFrom(host, event)) swallow(event);
+      }, true);
+      host.addEventListener('click', (event) => {
+        const button = menuButtonFrom(host, event);
+        if (!button) return;
+        swallow(event);
+        if (openMenuState && openMenuState.anchor === button) {
+          closeMenu();
+          return;
+        }
+        openMenu(host, menuKindFor(host, button), button);
+      }, true);
+      host.addEventListener('keydown', (event) => {
+        const button = menuButtonFrom(host, event);
+        if (!button) return;
+        if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+          swallow(event);
+          openMenu(host, menuKindFor(host, button), button);
+        }
+      }, true);
+    }
+
+    /* ------------------------------------------------------------------
+       Settings sections: 「关于」 and 「退出」 moved out of the title bar.
+       ------------------------------------------------------------------ */
+    function readRelease() {
+      try {
+        const boot = window.__DSH_BOOT__;
+        const release = boot && typeof boot === 'object' ? boot.release : undefined;
+        if (release && typeof release.version === 'string' && release.version !== '') {
+          return {
+            version: release.version,
+            commit: typeof release.commit === 'string' ? release.commit : '',
+          };
+        }
+      } catch {}
+      return { version: '', commit: '' };
+    }
+
+    function AboutSection() {
+      const release = readRelease();
+      const [busy, setBusy] = React.useState(false);
+      const checkForUpdates = () => {
+        const api = window.dshDesktop;
+        if (!api || !api.updates || typeof api.updates.open !== 'function') return;
+        setBusy(true);
+        Promise.resolve(api.updates.open())
+          .catch(() => {})
+          .finally(() => setBusy(false));
+      };
+      const row = (label, value) =>
+        h(
+          'div',
+          { className: 'sws-row', key: label },
+          h('span', { className: 'sws-row-label' }, label),
+          h('span', { className: 'sws-row-value' }, value),
+        );
+      return h(
+        'div',
+        { className: 'sws-page' },
+        h(
+          'div',
+          { className: 'sws-card' },
+          h('div', { className: 'sws-wordmark' }, 'DeepSeek Harness'),
+          h(
+            'div',
+            { className: 'sws-tagline' },
+            tr('探索未竟之境', 'Explore the uncharted'),
+          ),
+        ),
+        h(
+          'div',
+          { className: 'sws-rows' },
+          [
+            release.version
+              ? row(
+                  tr('版本', 'Version'),
+                  release.commit ? `${release.version} (${release.commit.slice(0, 7)})` : release.version,
+                )
+              : null,
+            row(tr('主题', 'Theme'), tr('姬子的星月夜 · 1.0.0', "Himeko's Starry Night · 1.0.0")),
+            row(tr('壁纸', 'Wallpaper'), tr('星云 · 莫奈取色', 'Nebula · Monet palette')),
+          ].filter(Boolean),
+        ),
+        h(
+          'div',
+          { className: 'sws-card' },
+          h('div', { className: 'sws-title' }, tr('检查更新', 'Check for updates')),
+          h('div', { className: 'sws-desc' }, tr('从桌面端获取最新版本。', 'Get the latest desktop release.')),
+          h(
+            'div',
+            { className: 'sws-actions' },
+            h(
+              'button',
+              { type: 'button', className: 'sws-btn', disabled: busy, onClick: checkForUpdates },
+              busy ? tr('检查中…', 'Checking…') : tr('检查更新', 'Check for updates'),
+            ),
+          ),
+        ),
+      );
+    }
+
+    function ExitSection() {
+      const closeWindow = () => {
+        try {
+          window.close();
+        } catch {}
+      };
+      return h(
+        'div',
+        { className: 'sws-page' },
+        h(
+          'div',
+          { className: 'sws-card' },
+          h('div', { className: 'sws-title' }, tr('退出 DeepSeek Harness', 'Quit DeepSeek Harness')),
+          h(
+            'div',
+            { className: 'sws-desc' },
+            tr(
+              '关闭窗口后，应用会继续在系统托盘中运行，正在进行的任务不会中断。要完全退出，请右键系统托盘中的 DeepSeek Harness 图标并选择「退出」。',
+              'Closing the window keeps the app running in the system tray so running tasks continue. To quit completely, right-click the DeepSeek Harness tray icon and choose Quit.',
+            ),
+          ),
+          h(
+            'div',
+            { className: 'sws-actions' },
+            h('button', { type: 'button', className: 'sws-btn', onClick: closeWindow }, tr('关闭窗口', 'Close window')),
+          ),
+        ),
+      );
+    }
+
     return {
       inject: ['slots'],
       apply(ctx) {
@@ -752,23 +1382,44 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
           lockDark();
           ctx.on('theme/change', lockDark);
         }
-        // Title-bar menu glass + transparent native caption overlay.
+        // Title-bar menu glass, caption overlay, and the self-drawn menus.
+        const ensureMenuBar = () => {
+          const host = document.querySelector('[data-windows-menu]');
+          if (!host || !host.shadowRoot) return false;
+          styleMenuBar();
+          bindMenuHost(host);
+          return true;
+        };
         const startMenuBar = () => {
-          if (styleMenuBar()) return;
+          if (ensureMenuBar()) return;
           let tries = 0;
           const timer = setInterval(() => {
             tries += 1;
-            if (styleMenuBar() || tries > 80) clearInterval(timer);
+            if (ensureMenuBar() || tries > 120) clearInterval(timer);
           }, 250);
         };
         startMenuBar();
         setTimeout(refreshCaptionProbe, 120);
         setTimeout(refreshCaptionProbe, 1500);
-        const menuObserver = new MutationObserver(() => styleMenuBar());
+        const menuObserver = new MutationObserver(() => ensureMenuBar());
         try {
           menuObserver.observe(document.body, { childList: true });
         } catch {}
         ctx.on('dispose', () => menuObserver.disconnect());
+        ctx.on('dispose', () => closeMenu());
+        // 「关于」 and 「退出」 live in Settings now, right below Agent 预设.
+        ctx.slots.inject('settings.section', () => ctx.slots.register({
+          name: 'settings.section',
+          id: 'star-about',
+          order: 21,
+          label: () => tr('关于', 'About'),
+        }, AboutSection));
+        ctx.slots.inject('settings.section', () => ctx.slots.register({
+          name: 'settings.section',
+          id: 'star-exit',
+          order: 22,
+          label: () => tr('退出', 'Exit'),
+        }, ExitSection));
         ctx.slots.inject('shell.overlay', () => ctx.slots.register({
           name: 'shell.overlay',
           id: 'star-wallpaper',
