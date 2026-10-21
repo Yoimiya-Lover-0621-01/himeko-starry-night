@@ -1225,6 +1225,67 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
     0 10px 24px rgba(0, 0, 0, 0.30) !important;
 }
 
+/* ===== Composer dock readings (turns / tok/s / cache hit) =============
+   These 12px pills sit directly on the artwork under the composer, and
+   label-tertiary vanishes whenever the wallpaper turns bright. Give every
+   reading a faint glass chip with a dark bed, brighter text and a shadow
+   so it stays legible on any part of the artwork. */
+[class*="iq1doa_pill"] {
+  color: var(--dsw-alias-label-secondary, #c4c9f2) !important;
+  background: rgba(8, 10, 30, 0.34) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  border-radius: 8px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.10) !important;
+  text-shadow: 0 1px 2px rgba(3, 5, 16, 0.65);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+[class*="iq1doa_pill"] svg {
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+[class*="iq1doa_sep"] {
+  color: rgba(165, 172, 225, 0.45) !important;
+  text-shadow: 0 1px 2px rgba(3, 5, 16, 0.55);
+}
+button[class*="iq1doa_pill"]:hover,
+button[class*="iq1doa_pill"][aria-expanded="true"] {
+  background: rgba(20, 24, 64, 0.58) !important;
+  color: var(--dsw-alias-label-primary, #f1f2ff) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Context meter (ring + percentage, right of the dock pills) has the same
+   readability problem: same glass chip treatment and a visible ring. */
+[class~="_2WTFBq_trigger"] {
+  color: var(--dsw-alias-label-secondary, #c4c9f2) !important;
+  background: rgba(8, 10, 30, 0.34) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  border-radius: 8px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.10) !important;
+  text-shadow: 0 1px 2px rgba(3, 5, 16, 0.65);
+  font-weight: 500;
+}
+[class~="_2WTFBq_trigger"]:hover,
+[class~="_2WTFBq_trigger"][aria-expanded="true"] {
+  background: rgba(20, 24, 64, 0.58) !important;
+  color: var(--dsw-alias-label-primary, #f1f2ff) !important;
+}
+[class~="_2WTFBq_track"] {
+  stroke: rgba(170, 178, 235, 0.34) !important;
+}
+[class~="_2WTFBq_fill"] {
+  stroke: var(--dsw-alias-brand-primary, #8b82f5) !important;
+}
+
 `;
 
     function NebulaWallpaper() {
