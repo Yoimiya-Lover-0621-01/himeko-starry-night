@@ -17,6 +17,10 @@ DeepSeek Harness Web UI 的主题插件：星云壁纸 + 莫奈取色 + 液态�
   编辑菜单的撤销 / 重做 / 剪切 / 复制 / 粘贴 / 删除 / 全选均可用，不再出现系统原生灰菜单。
 - 设置里新增「关于」「退出」两栏（排在 Agent 预设下方）：「关于」展示版本、主题与壁纸信息，
   并提供检查更新；「退出」提供关闭窗口到系统托盘的入口。
+- 启动屏：宿主端通过 `webserver/index-inject` 注入一层 `[data-dsh-boot]` 作用域的样式，
+  启动页不再是纯黑 HARNESS：星云壁纸 + 液态玻璃胶囊 + 官方 deepseek HARNESS 标志 + 长春花紫
+  环形加载 + 「正在点亮星月夜…」+ 底部主题落款。`dsh web` 首帧即生效；桌面端在下一次启动时
+  由 boot payload 注入（应用启动时采集，装好后重启一次即可看到）。
 
 ## 已知限制
 
@@ -26,6 +30,8 @@ DeepSeek Harness Web UI 的主题插件：星云壁纸 + 莫奈取色 + 液态�
   因此没有迁移到自绘菜单中；「关于」「退出」已按要求放进设置。
 - 「应用 / 编辑」的玻璃下拉依赖桌面端 preload 注入的标题栏按钮（Windows 桌面版）；纯浏览器
   打开 Web UI 时没有这两个按钮，插件不会注入任何额外菜单。
+- 启动屏样式只在启动页存在期间生效；桌面端本次运行期间不会出现（boot 注入在宿主启动时采集），
+  重启一次 DSH 桌面端后生效。
 
 ## 安装
 
@@ -38,7 +44,10 @@ dsh plugin add "D:\path\to\dsh-star-wallpaper"
 ## 目录
 
 - `client.js`：构建产物（勿手改）
+- `index.js`：宿主半边，只负责往启动页注入样式；启动不依赖它也能正常进入应用
 - `tools/client.template.js`：样式与逻辑源文件
 - `tools/build-client.mjs`：构建脚本（把 `assets/nebula.jpg` 内联成 base64）
 - `assets/nebula.jpg`：裁切后的星云画作（3051x1295）
+- `assets/boot.jpg`：启动屏用压缩壁纸（1600x679）
+- `assets/brand-lockup.svg`：从官方品牌组件提取的 deepseek HARNESS 标志
 - `cordis.patch.yml`：把本插件挂进 bundle

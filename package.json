@@ -29,6 +29,8 @@
                   "locale/*.json",
                   "icon.svg",
                   "assets/nebula.jpg",
+                  "assets/boot.jpg",
+                  "assets/brand-lockup.svg",
                   "README.md"
               ],
     "license":  "MIT",
