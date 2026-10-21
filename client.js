@@ -394,6 +394,29 @@ body[data-ds-dark-theme] {
   box-shadow: none !important;
 }
 
+/* Session hover card (primitives HoverCard): the stock component hardcodes a
+   flat #2C2C2E panel instead of a theme token, so hovering a session showed a
+   grey box floating over the artwork. Put it on the same deep-navy frosted
+   glass as every other secondary menu. */
+[class*="_card_38jqx_"] {
+  --dsw-hovercard-bg: transparent !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0) 30%,
+      rgba(255, 255, 255, 0.02) 100%
+    ),
+    rgba(45, 50, 100, 0.92) !important;
+  -webkit-backdrop-filter: blur(64px) saturate(170%);
+  backdrop-filter: blur(64px) saturate(170%);
+  border-radius: 14px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12),
+    0 16px 36px rgba(0, 0, 0, 0.34) !important;
+}
+
 /* Standalone popovers/dialogs (agent team, registry pickers, schedule menu):
    same deep-navy frosted glass as the other secondary menus. */
 :is(
