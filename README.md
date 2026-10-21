@@ -2,6 +2,8 @@
 
 DeepSeek Harness Web UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃。
 
+![预览](preview.png)
+
 ## 效果
 
 - 星云画作（已裁掉 UID 水印）铺满整个窗口；UI 面板半透明，壁纸色透上来。
