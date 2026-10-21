@@ -18,9 +18,15 @@ DeepSeek Harness Web UI 的主题插件：星云壁纸 + 莫奈取色 + 液态�
 - 设置里新增「关于」「退出」两栏（排在 Agent 预设下方）：「关于」展示版本、主题与壁纸信息，
   并提供检查更新；「退出」提供关闭窗口到系统托盘的入口。
 - 启动屏：宿主端通过 `webserver/index-inject` 注入一层 `[data-dsh-boot]` 作用域的样式，
-  启动页不再是纯黑 HARNESS：星云壁纸 + 液态玻璃胶囊 + 官方 deepseek HARNESS 标志 + 长春花紫
-  环形加载 + 「正在点亮星月夜…」+ 底部主题落款。`dsh web` 首帧即生效；桌面端在下一次启动时
+  启动页不再是纯黑 HARNESS：星云壁纸 + 液态玻璃胶囊 + 官方 deepseek HARNESS 标志 + 鲸鱼尾巴
+  加载动画 + 「正在点亮星月夜…」+ 底部主题落款。`dsh web` 首帧即生效；桌面端在下一次启动时
   由 boot payload 注入（应用启动时采集，装好后重启一次即可看到）。
+- 「ask_user_question」选择窗：原生卡片用的是被主题调薄的 input 底色，看起来像壁纸上挖了个洞；
+  现在改成和设置弹窗同款的深蓝液态玻璃（42% 不透明 + 40px 模糊，按实际观感调过几轮），
+  选项行 / 编号 / 输入框 / 跳过 / 提交按钮统一成主题材质。
+- 加载指示器统一为鲸鱼尾巴：从 `dsh-client-ui-chat` 的运行时样式里取出官方 28×28 动画 APNG，
+  内联进插件并替换全部转圈 loader（附件上传、设置-账号、设置-通用更新指示、CoT 翻译、
+  附件缩略图，以及启动屏）。`prefers-reduced-motion` 下自动退回同一只尾巴的静态 SVG。
 
 ## 已知限制
 
@@ -46,8 +52,10 @@ dsh plugin add "D:\path\to\dsh-star-wallpaper"
 - `client.js`：构建产物（勿手改）
 - `index.js`：宿主半边，只负责往启动页注入样式；启动不依赖它也能正常进入应用
 - `tools/client.template.js`：样式与逻辑源文件
-- `tools/build-client.mjs`：构建脚本（把 `assets/nebula.jpg` 内联成 base64）
+- `tools/build-client.mjs`：构建脚本（把壁纸与鲸鱼尾巴内联成 base64）
 - `assets/nebula.jpg`：裁切后的星云画作（3051x1295）
 - `assets/boot.jpg`：启动屏用压缩壁纸（1600x679）
 - `assets/brand-lockup.svg`：从官方品牌组件提取的 deepseek HARNESS 标志
+- `assets/whale-tail.png`：官方 28×28 鲸鱼尾巴 APNG（从 ui-chat 运行时样式提取）
+- `assets/whale-tail-still.svg`：同一只尾巴的静态 SVG（reduced-motion 回退）
 - `cordis.patch.yml`：把本插件挂进 bundle

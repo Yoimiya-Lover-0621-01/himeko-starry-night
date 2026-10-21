@@ -40,7 +40,41 @@ function assetDataUri(path, mime) {
 function buildBootStyle() {
   const wallpaper = assetDataUri('./assets/boot.jpg', 'image/jpeg');
   const logo = assetDataUri('./assets/brand-lockup.svg', 'image/svg+xml');
+  const whaleTail = assetDataUri('./assets/whale-tail.png', 'image/png');
+  const whaleStill = assetDataUri('./assets/whale-tail-still.svg', 'image/svg+xml');
   if (wallpaper === '' && logo === '') return '';
+
+  const spinnerRule =
+    whaleTail === ''
+      ? `[data-dsh-boot-spinner] {
+  width: 22px !important;
+  height: 22px !important;
+  border: 2px solid rgba(150, 160, 255, 0.20) !important;
+  animation: swt-boot-spin 1.15s linear infinite !important;
+  filter: drop-shadow(0 0 9px rgba(150, 120, 255, 0.55));
+}`
+      : `[data-dsh-boot-spinner] {
+  width: 26px !important;
+  height: 26px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #dfe0ff !important;
+  -webkit-mask: url("${whaleTail}") center center / contain no-repeat !important;
+  mask: url("${whaleTail}") center center / contain no-repeat !important;
+  animation: none !important;
+  filter: drop-shadow(0 0 8px rgba(150, 120, 255, 0.55));
+}
+[data-dsh-boot-spinner]::after {
+  display: none !important;
+}`;
+
+  const whaleReducedMotion =
+    whaleStill === ''
+      ? ''
+      : `  [data-dsh-boot-spinner] {
+    -webkit-mask-image: url("${whaleStill}") !important;
+    mask-image: url("${whaleStill}") !important;
+  }`;
 
   const wallpaperRule =
     wallpaper === ''
@@ -109,17 +143,7 @@ ${wallpaperRule}
   animation: swt-boot-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 ${logoRule}
-[data-dsh-boot-spinner] {
-  width: 22px !important;
-  height: 22px !important;
-  border: 2px solid rgba(150, 160, 255, 0.20) !important;
-  animation: swt-boot-spin 1.15s linear infinite !important;
-  filter: drop-shadow(0 0 9px rgba(150, 120, 255, 0.55));
-}
-[data-dsh-boot-spinner]::after {
-  inset: -2px !important;
-  background: conic-gradient(#c9b4ff var(--dsh-boot-arc, 84deg), transparent 0) !important;
-}
+${spinnerRule}
 [data-dsh-boot] > div:has([data-dsh-boot-spinner]) > div:last-child {
   font-size: 0 !important;
   color: transparent !important;
@@ -152,15 +176,13 @@ ${logoRule}
 @keyframes swt-boot-in {
   from { opacity: 0; transform: translateY(10px) scale(0.985); }
 }
-@keyframes swt-boot-spin {
-  to { transform: rotate(360deg); }
-}
 @media (prefers-reduced-motion: reduce) {
   [data-dsh-boot],
   [data-dsh-boot] > div,
   [data-dsh-boot-spinner] {
     animation: none !important;
   }
+${whaleReducedMotion}
 }
 `;
 }

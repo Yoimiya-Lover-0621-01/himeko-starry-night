@@ -25,6 +25,10 @@ window.__ModuleLoader__.load({
     const h = React.createElement;
 
     const WALLPAPER = '__WALLPAPER_DATA_URI__';
+    /* Official animated whale tail (APNG, 28x28) lifted from the Harness chat
+       running indicator, plus its static fallback for reduced-motion users. */
+    const WHALE_TAIL = '__WHALE_TAIL_DATA_URI__';
+    const WHALE_STILL = '__WHALE_STILL_DATA_URI__';
 
     const CSS = `
 html {
@@ -861,6 +865,135 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
 .sws-btn:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+/* ===== Whale tail replaces every spinning loader =====================
+   The official running indicator in the Chat is an APNG whale tail masked
+   with currentColor. Reuse the exact same asset for every ring spinner in
+   the UI (attachment, settings account/general, CoT translation) so the
+   theme has one loading language instead of blue circles. */
+[class*="_spinner"] {
+  -webkit-mask: url("${WHALE_TAIL}") center center / contain no-repeat !important;
+  mask: url("${WHALE_TAIL}") center center / contain no-repeat !important;
+  background: currentColor !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex: none;
+  position: relative;
+}
+[class*="_spinner"] > * {
+  display: none !important;
+}
+[class*="_spinner"]::before,
+[class*="_spinner"]::after {
+  display: none !important;
+  content: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="_spinner"] {
+    -webkit-mask-image: url("${WHALE_STILL}") !important;
+    mask-image: url("${WHALE_STILL}") !important;
+  }
+}
+
+/* ===== ask_user_question card ========================================
+   The stock card paints --dsw-specific-input-major, which this theme thins
+   to 10% alpha, so the question window read as a hole in the wallpaper and
+   did not match the settings panel. Give it the same deep-navy frosted
+   glass, and unify its rows with the rest of the theme. */
+[class~="mAtvLq_card"],
+[class~="P2izSq_card"] {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0) 34%,
+      rgba(255, 255, 255, 0.02) 100%
+    ),
+    rgba(20, 22, 60, 0.42) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(0.94);
+  backdrop-filter: blur(40px) saturate(180%) brightness(0.94);
+  border-radius: 18px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 0 0 0.5px rgba(170, 178, 255, 0.16),
+    0 18px 44px rgba(0, 0, 0, 0.34) !important;
+}
+[class~="mAtvLq_eyebrow"] {
+  color: rgba(170, 176, 235, 0.85) !important;
+}
+[class~="mAtvLq_option"] {
+  border-radius: 10px !important;
+}
+[class~="mAtvLq_option"]:hover:not(:disabled),
+[class~="mAtvLq_option"][class~="mAtvLq_optionSelected"] {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.08) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+[class~="mAtvLq_option"][class~="mAtvLq_optionSelected"] {
+  border-color: rgba(160, 168, 255, 0.42) !important;
+}
+[class~="mAtvLq_number"] {
+  background: rgba(150, 160, 255, 0.14) !important;
+  border-radius: 7px !important;
+}
+[class~="mAtvLq_customRow"] {
+  border-radius: 10px !important;
+}
+[class~="mAtvLq_customRow"]:hover,
+[class~="mAtvLq_customRow"]:focus-within {
+  background: rgba(150, 160, 255, 0.09) !important;
+}
+[class~="mAtvLq_customBlock"] {
+  background: rgba(10, 12, 36, 0.62) !important;
+  border-color: rgba(160, 168, 255, 0.22) !important;
+  border-radius: 12px !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+}
+[class~="mAtvLq_customBlock"]:focus-within {
+  border-color: var(--dsw-alias-state-business-primary, #8b82f5) !important;
+}
+[class~="mAtvLq_footerActions"] button {
+  border-radius: 10px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14) !important;
+}
+[class~="mAtvLq_footerActions"] > button:first-of-type {
+  background: rgba(150, 160, 255, 0.10) !important;
+  color: var(--dsw-alias-label-primary) !important;
+}
+[class~="mAtvLq_footerActions"] > button:first-of-type:hover:not(:disabled) {
+  background: rgba(150, 160, 255, 0.18) !important;
+}
+[class~="mAtvLq_footerActions"] > button:last-of-type {
+  background: rgba(58, 84, 255, 0.82) !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.20),
+    0 4px 14px rgba(0, 0, 0, 0.18) !important;
+}
+[class~="mAtvLq_footerActions"] > button:last-of-type:hover:not(:disabled) {
+  background: rgba(80, 108, 255, 0.92) !important;
+}
+[class~="mAtvLq_footerActions"] > button:last-of-type:disabled {
+  background: rgba(58, 84, 255, 0.32) !important;
+  color: rgba(255, 255, 255, 0.55) !important;
 }
 
 `;
