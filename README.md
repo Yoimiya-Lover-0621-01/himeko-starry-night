@@ -46,6 +46,10 @@ DeepSeek Harness Web UI 的主题插件：星云壁纸 + 莫奈取色 + 液态�
 ## 安装
 
 ```bash
+# 从 GitHub 安装（推荐）
+dsh plugin add https://github.com/Yoimiya-Lover-0621-01/himeko-starry-night
+
+# 或从本地目录安装
 dsh plugin add "D:\path\to\dsh-star-wallpaper"
 ```
 
