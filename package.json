@@ -45,9 +45,9 @@
                      "liquid-glass",
                      "plugin"
                  ],
-    "homepage":  "https://github.com/\u003cyour-username\u003e/himeko-starry-night#readme",
+    "homepage":  "https://gitee.com/\u003cyour-gitee-id\u003e/himeko-starry-night#readme",
     "repository":  {
                        "type":  "git",
-                       "url":  "https://github.com/\u003cyour-username\u003e/himeko-starry-night.git"
+                       "url":  "https://gitee.com/\u003cyour-gitee-id\u003e/himeko-starry-night.git"
                    }
 }
