@@ -179,6 +179,14 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
   border-radius: 8px !important;
   transition: background-color 0.14s ease, box-shadow 0.14s ease, color 0.14s ease;
 }
+/* The agent-preset chip is a bare 22px inline label (no horizontal padding),
+   so its hover glass would read smaller than the chips beside it. Give it the
+   same padded 28px box; negative margins keep the row layout unchanged. */
+[class~="b06baG_label"] {
+  padding: 3px 8px !important;
+  margin: -3px -6px !important;
+  min-height: 22px;
+}
 [class~="EBLgjq_trigger"]:hover,
 [class~="foD-wG_trigger"]:hover,
 [class~="b06baG_label"]:hover,
