@@ -586,7 +586,12 @@ body[data-ds-dark-theme] {
   [class*="_2WTFBq_panel"],
   [class*="CVUQCW_panel"],
   [class*="_VovcG_panel"],
-  [class*="fO69Vq_registry"],
+  /* The plugin installer's registry picker is a bare <fieldset>: match the
+     panel class token exactly, otherwise class*="fO69Vq_registry" also hits
+     registryToggle / registryOption / registryCustomField and turns every row
+     inside the popover into its own frosted card (stacked translucent layers,
+     text bleeding through). */
+  [class~="fO69Vq_registry"],
   [class*="q7hbua_menu"]
 ) {
   background: rgba(45, 50, 100, 0.90) !important;
@@ -597,6 +602,19 @@ body[data-ds-dark-theme] {
     inset 0 1px 0 rgba(255, 255, 255, 0.10),
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.07),
     0 14px 30px rgba(0, 0, 0, 0.30) !important;
+}
+/* The installer's registry popover floats above the install dialog, so it
+   needs a denser fill than a standalone menu: the dialog copy underneath
+   (the source warning + the install button) must not read through the panel. */
+[class~="fO69Vq_registry"] {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0) 30%,
+      rgba(255, 255, 255, 0.02) 100%
+    ),
+    rgba(32, 36, 82, 0.965) !important;
 }
 
 /* Agent-team popover (EBLgjq_panel): real liquid glass on its ::before layer,
