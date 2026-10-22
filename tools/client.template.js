@@ -160,6 +160,51 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
 [class~="RlGAzG_primary"]:hover:not(:disabled) {
   background: rgba(80, 108, 255, 0.92) !important;
 }
+
+/* ===== Session header controls: Liquid Glass on hover ==================
+   The row's chips (Agent Teams / agent preset / background jobs) and the
+   right-hand buttons (open-in-app, overflow, sidebar expand) are flat ghost
+   controls: most of them only shift their text colour on hover. Give them the
+   menu's frosted material only while the pointer is over them, so the resting
+   header stays clean. The chip classes are the shipped ones; the right-side
+   wrappers (utilities / corner) have display:contents slot wrappers, so their
+   inner buttons are matched directly. */
+[class~="EBLgjq_trigger"],
+[class~="foD-wG_trigger"],
+[class~="b06baG_label"],
+[class~="dzXS4q_button"],
+[class~="Dc7zOa_headerUtilities"] button,
+[class~="Dc7zOa_headerUtilities"] [role="button"],
+[class~="Dc7zOa_headerCorner"] button {
+  border-radius: 8px !important;
+  transition: background-color 0.14s ease, box-shadow 0.14s ease, color 0.14s ease;
+}
+[class~="EBLgjq_trigger"]:hover,
+[class~="foD-wG_trigger"]:hover,
+[class~="b06baG_label"]:hover,
+[class~="dzXS4q_button"]:hover,
+[class~="Dc7zOa_headerUtilities"] button:hover,
+[class~="Dc7zOa_headerUtilities"] [role="button"]:hover,
+[class~="Dc7zOa_headerCorner"] button:hover,
+[class~="EBLgjq_trigger"][aria-expanded="true"],
+[class~="foD-wG_trigger"][aria-expanded="true"],
+[class~="Dc7zOa_headerUtilities"] button[aria-expanded="true"] {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.05) 38%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.10) 100%
+  ) !important;
+  background-color: rgba(16, 18, 48, 0.30) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 6px 16px rgba(0, 0, 0, 0.22) !important;
+  color: var(--dsw-alias-label-primary, #f1f2ff) !important;
+}
 /* Settings modal builds its panel on the translucent layer-2 token; give the
    panel itself a readable frosted backing so settings pages stay usable. */
 body:not([data-ds-dark-theme]) [class~="wCInkW_panel"] {
