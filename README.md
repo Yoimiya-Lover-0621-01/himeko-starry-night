@@ -2,7 +2,7 @@
 
 DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃。
 
-![预览](preview.png)
+![姬子的星月夜：星云壁纸与液态玻璃界面](preview.png)
 
 ## 效果
 
@@ -31,8 +31,19 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
   附件缩略图，以及启动屏）。`prefers-reduced-motion` 下自动退回同一只尾巴的静态 SVG。
 - 「插件」页与「自动化任务」页：行 hover、筛选 pill、搜索框和按钮统一成液态玻璃材质
   （按钮保留原品牌色，只加玻璃高光/rim；行高光换成菜单同款渐变玻璃）。
+- 插件安装弹窗：「安装源」下拉是一整块玻璃面板，选项行保持透明扁平，不再逐行叠玻璃
+  （此前每一行都被当成独立面板，层叠透字）；「自定义地址」输入框与提示文字沿用主题材质。
 - 输入框下方的用量读数（轮次 / tok/s / tok 总量 / 缓存命中 / 上下文百分比）：原本直接压在
   壁纸上，亮处几乎看不清；现在每一项都是深色玻璃底片 + 提亮文字 + 阴影，任何壁纸区域都清晰。
+
+## 界面截图
+
+下面几张是浏览器版（`dsh web`）实拍，未做后期；桌面端的窗口标题栏按钮与启动屏略有不同，
+其余材质一致。
+
+| 设置 · 关于 | 插件页 |
+| --- | --- |
+| ![设置里的「关于」栏：主题版本、壁纸与检查更新](preview-settings.png) | ![插件页：已安装的「姬子的星月夜」与实验性插件开关](preview-plugins.png) |
 
 ## 已知限制
 
@@ -77,4 +88,5 @@ dsh plugin add "D:\path\to\dsh-star-wallpaper"
 - `assets/brand-lockup.svg`：从官方品牌组件提取的 deepseek HARNESS 标志
 - `assets/whale-tail.png`：官方 28×28 鲸鱼尾巴 APNG（从 ui-chat 运行时样式提取）
 - `assets/whale-tail-still.svg`：同一只尾巴的静态 SVG（reduced-motion 回退）
+- `preview.png` / `preview-settings.png` / `preview-plugins.png`：README 里的界面截图（浏览器版）
 - `cordis.patch.yml`：把本插件挂进 bundle
