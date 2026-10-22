@@ -1466,6 +1466,59 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
   stroke: var(--dsw-alias-brand-primary, #8b82f5) !important;
 }
 
+/* ===== Stable skin layer: runtime-tagged anchors ======================
+   installTagger() marks the components that carry the theme's identity with
+   data-sws-* attributes. The rules below reproduce the hashed rules through
+   those hooks, so a DSH class-hash rebuild degrades to "fewer niceties"
+   instead of "half-painted theme". Keep values in sync with the hash rules. */
+[data-sws-composer] {
+  -webkit-backdrop-filter: blur(72px) saturate(150%) brightness(1.0);
+  backdrop-filter: blur(72px) saturate(150%) brightness(1.0);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0.025) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.07),
+    0 16px 36px rgba(0, 0, 0, 0.22) !important;
+}
+body[data-ds-dark-theme] [data-sws-composer] {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0.02) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    0 16px 36px rgba(0, 0, 0, 0.26) !important;
+}
+[data-sws-send],
+[data-sws-add] {
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.40), inset 0 0 0 0.5px rgba(255, 255, 255, 0.20), 0 4px 14px rgba(0, 0, 0, 0.18) !important;
+}
+[data-sws-send] {
+  background: rgba(58, 84, 255, 0.82) !important;
+  color: #ffffff !important;
+}
+[data-sws-send]:hover:not(:disabled) {
+  background: rgba(80, 108, 255, 0.92) !important;
+}
+[data-sws-chip] {
+  border-radius: 8px !important;
+  transition: background-color 0.14s ease, box-shadow 0.14s ease, color 0.14s ease;
+}
+[data-sws-chip]:hover,
+[data-sws-chip][aria-expanded="true"] {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 38%, rgba(255, 255, 255, 0.02) 62%, rgba(255, 255, 255, 0.10) 100%) !important;
+  background-color: rgba(16, 18, 48, 0.30) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 6px 16px rgba(0, 0, 0, 0.22) !important;
+  color: var(--dsw-alias-label-primary, #f1f2ff) !important;
+}
+
 `;
 
     function NebulaWallpaper() {
@@ -1479,7 +1532,7 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
        Settings -> About and window.__SWS_COMPAT__, and degrade the status
        honestly instead of silently painting half a theme. Never throw: a
        theme must not be able to take the host down. */
-    const THEME_VERSION = '1.1.0';
+    const THEME_VERSION = '1.0.1';
     const COMPAT = (() => {
       const state = {
         theme: THEME_VERSION,
@@ -1558,6 +1611,70 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
       return { state, probe, recordSlot, has };
     })();
     const runCompatProbe = () => COMPAT.probe();
+
+    /* ===== Stable anchor tagger ========================================
+       Adds data-sws-* attributes to the components the stable skin paints.
+       It never touches layout or React state; a debounced MutationObserver
+       re-applies attributes React may drop during reconciliation. */
+    const TAGGED = [
+      ['[aria-label="发送消息"]', 'data-sws-send'],
+      ['[aria-label="添加文件或调用指令"]', 'data-sws-add'],
+      ['[class*="EBLgjq_trigger"], [aria-label="智能体团队"]', 'data-sws-chip'],
+      ['[class*="b06baG_label"]', 'data-sws-chip'],
+      ['[class*="foD-wG_trigger"]', 'data-sws-chip'],
+      ['[class*="oXE0lW_trigger"], [class*="oXE0lW_switcherTrigger"]', 'data-sws-chip'],
+      ['[class*="dzXS4q_button"]', 'data-sws-chip'],
+      ['[class*="Dc7zOa_headerUtilities"] button', 'data-sws-chip'],
+      ['[class*="Dc7zOa_headerCorner"] button', 'data-sws-chip'],
+    ];
+    function tagWith(selector, attribute) {
+      try {
+        for (const node of document.querySelectorAll(selector)) node.setAttribute(attribute, '');
+      } catch {}
+    }
+    function tagComposerCard() {
+      try {
+        const editor = document.querySelector('[contenteditable]:not([contenteditable="false"]), [data-lexical-editor="true"]');
+        if (!editor) return;
+        let card = null;
+        try {
+          card = editor.closest('[class*="RlGAzG_card"], [class*="_card_"]');
+        } catch {}
+        if (!card) {
+          let parent = editor.parentElement;
+          for (let i = 0; parent && i < 6; i += 1, parent = parent.parentElement) {
+            if (parent.querySelector('[aria-label="发送消息"]')) { card = parent; break; }
+          }
+        }
+        if (card) card.setAttribute('data-sws-composer', '');
+      } catch {}
+    }
+    function runTaggers() {
+      tagComposerCard();
+      for (const entry of TAGGED) tagWith(entry[0], entry[1]);
+      tagWith('[role="dialog"]', 'data-sws-dialog');
+      tagWith('[role="menu"]', 'data-sws-menu');
+      tagWith('[class*="_bubble"], [class*="bubble"]', 'data-sws-bubble');
+    }
+    function installTagger() {
+      let timer = 0;
+      const schedule = () => {
+        if (timer) return;
+        timer = setTimeout(() => { timer = 0; runTaggers(); }, 180);
+      };
+      schedule();
+      setTimeout(runTaggers, 900);
+      setTimeout(runTaggers, 2800);
+      let observer = null;
+      try {
+        observer = new MutationObserver(schedule);
+        observer.observe(document.body, { childList: true, subtree: true });
+      } catch {}
+      return () => {
+        try { if (observer) observer.disconnect(); } catch {}
+        if (timer) clearTimeout(timer);
+      };
+    }
 
     /* ===== Easter egg: a letter kept for three-character names ==========
        Deliberately hidden: no Settings entry, no visible control. Typing a
@@ -2264,6 +2381,12 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
           setTimeout(runCompatProbe, 400);
           setTimeout(runCompatProbe, 2000);
         } catch {}
+        // Stable anchor tagging: data-sws-* survives class-hash rebuilds and
+        // keeps the most visible glass surfaces themed when the hashed layer
+        // goes stale. Fail-soft; disposed with the plugin.
+        let stopTagger = null;
+        try { stopTagger = installTagger(); } catch {}
+        ctx.on('dispose', () => { try { if (stopTagger) stopTagger(); } catch {} });
         // Title-bar menu glass, caption overlay, and the self-drawn menus.
         const ensureMenuBar = () => {
           const host = document.querySelector('[data-windows-menu]');

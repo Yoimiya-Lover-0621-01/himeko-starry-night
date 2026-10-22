@@ -68,7 +68,12 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
   - **部分适配 / 基础模式**：检测到 DSH 前端已变化，插件会如实显示降级状态；壁纸与基础变量继续生效，
     组件皮肤静默失效，不会把宿主拖崩；
 - 控制台会打印一行 `[star-wallpaper] DSH <版本> · compat <等级> · anchors <n>/<m>`；
-- 也可以在页面控制台查看 `window.__SWS_COMPAT__` 核对当前状态。
+- 也可以在页面控制台查看 `window.__SWS_COMPAT__` 核对当前状态；
+- 稳定锚点：输入框、发送/添加按钮、会话头部控件等核心组件会在运行时被标上 `data-sws-*`，
+  玻璃样式同时挂在锚点上——即使下次 DSH 重哈希类名，这些最显眼的部位仍然保持主题材质。
+
+升级 DSH 后想快速比对：`node tools/selectors-report.mjs` 会列出模板里所有依赖类名的选择器
+（`--json` 输出结构化结果），适合适配新版本时看差异。
 
 主题没有声明 `peerDependencies`，所以 DSH 的启动兼容闸门不会拦它（好处是 0.2.x 上照常加载，
 代价是大版本重构时要靠上面这行状态自查）。如果「关于」里显示的不是「完整」，等本插件更新，
@@ -101,6 +106,7 @@ dsh plugin add "D:\path\to\dsh-star-wallpaper"
 - `index.js`：宿主半边，只负责往启动页注入样式；启动不依赖它也能正常进入应用
 - `tools/client.template.js`：样式与逻辑源文件
 - `tools/build-client.mjs`：构建脚本（把壁纸与鲸鱼尾巴内联成 base64）
+- `tools/selectors-report.mjs`：类名选择器清单（适配新 DSH 版本时比对用）
 - `assets/nebula.jpg`：裁切后的星云画作（3051x1295）
 - `assets/boot.jpg`：启动屏用压缩壁纸（1600x679）
 - `assets/brand-lockup.svg`：从官方品牌组件提取的 deepseek HARNESS 标志
