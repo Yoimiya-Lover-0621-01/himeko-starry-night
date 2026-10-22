@@ -2109,14 +2109,14 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
             'div',
             { className: 'sws-desc' },
             tr(
-              '关闭窗口后，应用会继续在系统托盘中运行，正在进行的任务不会中断。要完全退出，请右键系统托盘中的 DeepSeek Harness 图标并选择「退出」。',
-              'Closing the window keeps the app running in the system tray so running tasks continue. To quit completely, right-click the DeepSeek Harness tray icon and choose Quit.',
+              '点击下面的按钮会完全退出 DeepSeek Harness，正在进行的任务会被中断。请先确认没有需要保留的运行中任务或未发送内容。',
+              'The button below fully quits DeepSeek Harness; running tasks are interrupted. Make sure nothing important is still running or unsaved first.',
             ),
           ),
           h(
             'div',
             { className: 'sws-actions' },
-            h('button', { type: 'button', className: 'sws-btn', onClick: closeWindow }, tr('关闭窗口', 'Close window')),
+            h('button', { type: 'button', className: 'sws-btn', onClick: closeWindow }, tr('退出 DeepSeek Harness', 'Quit DeepSeek Harness')),
           ),
         ),
       );
