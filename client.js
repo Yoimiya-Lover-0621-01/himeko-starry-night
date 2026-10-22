@@ -2075,7 +2075,7 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
           h(
             'div',
             { className: 'sws-tagline' },
-            tr('探索未竟之境', 'Explore the uncharted'),
+            tr('探索未至之境', 'Explore the uncharted'),
           ),
         ),
         h(
