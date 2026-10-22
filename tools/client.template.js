@@ -219,11 +219,11 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
     0 6px 16px rgba(0, 0, 0, 0.22) !important;
   color: var(--dsw-alias-label-primary, #f1f2ff) !important;
 }
-/* ===== Easter egg: a quiet letter, surfaced only by chosen words ========
+/* ===== Greeting overlay: a quiet card, surfaced only by matching input ========
    The trigger words are never shipped: they live in localStorage and are
    edited in Settings → 彩蛋. This stylesheet only paints the card when the
    overlay component decides to open. */
-.swt-egg-backdrop {
+.swt-greeting-backdrop {
   position: fixed;
   inset: 0;
   z-index: 12000;
@@ -234,9 +234,9 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
   background: rgba(4, 6, 18, 0.44);
   -webkit-backdrop-filter: blur(12px) saturate(120%);
   backdrop-filter: blur(12px) saturate(120%);
-  animation: swt-egg-fade 0.55s ease both;
+  animation: swt-greeting-fade 0.55s ease both;
 }
-.swt-egg-card {
+.swt-greeting-card {
   position: relative;
   box-sizing: border-box;
   width: min(560px, 100%);
@@ -254,17 +254,17 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
     0 34px 90px rgba(0, 0, 0, 0.48);
-  animation: swt-egg-rise 0.6s cubic-bezier(0.22, 0.9, 0.25, 1) both;
+  animation: swt-greeting-rise 0.6s cubic-bezier(0.22, 0.9, 0.25, 1) both;
 }
-.swt-egg-star {
+.swt-greeting-star {
   position: absolute;
   width: 2px;
   height: 2px;
   border-radius: 50%;
   background: rgba(230, 232, 255, 0.8);
-  animation: swt-egg-twinkle 4.5s ease-in-out infinite;
+  animation: swt-greeting-twinkle 4.5s ease-in-out infinite;
 }
-.swt-egg-text {
+.swt-greeting-text {
   margin: 0;
   font-size: 15px;
   line-height: 2;
@@ -273,7 +273,7 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
   white-space: pre-wrap;
   color: #dfe3ff;
 }
-.swt-egg-bless {
+.swt-greeting-bless {
   margin: 22px 0 0;
   text-align: center;
   font-size: 17px;
@@ -281,14 +281,14 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
   color: #dcd6ff;
   text-shadow: 0 0 18px rgba(170, 160, 255, 0.35);
 }
-.swt-egg-sig {
+.swt-greeting-sig {
   margin: 20px 0 0;
   text-align: center;
   font-size: 10px;
   letter-spacing: 0.34em;
   color: rgba(160, 166, 210, 0.58);
 }
-.swt-egg-close {
+.swt-greeting-close {
   position: absolute;
   top: 10px;
   right: 12px;
@@ -305,19 +305,19 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
   align-items: center;
   justify-content: center;
 }
-.swt-egg-close:hover {
+.swt-greeting-close:hover {
   color: #f1f2ff;
   background: rgba(255, 255, 255, 0.10);
 }
-@keyframes swt-egg-fade {
+@keyframes swt-greeting-fade {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-@keyframes swt-egg-rise {
+@keyframes swt-greeting-rise {
   from { opacity: 0; transform: translateY(14px) scale(0.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-@keyframes swt-egg-twinkle {
+@keyframes swt-greeting-twinkle {
   0%, 100% { opacity: 0.18; }
   50% { opacity: 0.85; }
 }
@@ -1614,8 +1614,12 @@ body[data-ds-dark-theme] [data-sws-composer] {
 
     /* ===== Stable anchor tagger ========================================
        Adds data-sws-* attributes to the components the stable skin paints.
-       It never touches layout or React state; a debounced MutationObserver
-       re-applies attributes React may drop during reconciliation. */
+       The first pass scans the whole shell; afterwards only the subtrees React
+       adds are inspected. A streaming conversation used to re-query the whole
+       document on every mutation, so this keeps the same coverage with work
+       proportional to what actually changed. */
+    const EDITOR_SELECTOR =
+      '[contenteditable]:not([contenteditable="false"]), [data-lexical-editor="true"]';
     const TAGGED = [
       ['[aria-label="发送消息"]', 'data-sws-send'],
       ['[aria-label="添加文件或调用指令"]', 'data-sws-add'],
@@ -1627,78 +1631,136 @@ body[data-ds-dark-theme] [data-sws-composer] {
       ['[class*="Dc7zOa_headerUtilities"] button', 'data-sws-chip'],
       ['[class*="Dc7zOa_headerCorner"] button', 'data-sws-chip'],
     ];
-    function tagWith(selector, attribute) {
+    /* A burst this large is cheaper to answer with one full pass than with
+       dozens of scoped queries. */
+    const TAG_FULL_SCAN_LIMIT = 24;
+
+    function mark(node, attribute) {
+      if (node.hasAttribute(attribute)) return;
+      node.setAttribute(attribute, '');
+    }
+    function tagIn(root, selector, attribute) {
       try {
-        for (const node of document.querySelectorAll(selector)) node.setAttribute(attribute, '');
+        if (root.matches(selector)) mark(root, attribute);
+        for (const node of root.querySelectorAll(selector)) mark(node, attribute);
       } catch {}
     }
-    function tagComposerCard() {
+    function tagComposerIn(root) {
       try {
-        const editor = document.querySelector('[contenteditable]:not([contenteditable="false"]), [data-lexical-editor="true"]');
-        if (!editor) return;
-        let card = null;
-        try {
-          card = editor.closest('[class*="RlGAzG_card"], [class*="_card_"]');
-        } catch {}
-        if (!card) {
-          let parent = editor.parentElement;
-          for (let i = 0; parent && i < 6; i += 1, parent = parent.parentElement) {
-            if (parent.querySelector('[aria-label="发送消息"]')) { card = parent; break; }
+        const editors = [];
+        if (root.matches(EDITOR_SELECTOR)) editors.push(root);
+        for (const node of root.querySelectorAll(EDITOR_SELECTOR)) editors.push(node);
+        for (const editor of editors) {
+          let card = null;
+          try {
+            card = editor.closest('[class*="RlGAzG_card"], [class*="_card_"]');
+          } catch {}
+          if (!card) {
+            let parent = editor.parentElement;
+            for (let i = 0; parent && i < 6; i += 1, parent = parent.parentElement) {
+              if (parent.querySelector('[aria-label="发送消息"]')) { card = parent; break; }
+            }
           }
+          if (card) mark(card, 'data-sws-composer');
         }
-        if (card) card.setAttribute('data-sws-composer', '');
       } catch {}
+    }
+    function tagSubtree(root) {
+      for (const entry of TAGGED) tagIn(root, entry[0], entry[1]);
+      tagComposerIn(root);
     }
     function runTaggers() {
-      tagComposerCard();
-      for (const entry of TAGGED) tagWith(entry[0], entry[1]);
-      tagWith('[role="dialog"]', 'data-sws-dialog');
-      tagWith('[role="menu"]', 'data-sws-menu');
-      tagWith('[class*="_bubble"], [class*="bubble"]', 'data-sws-bubble');
+      try {
+        const root = document.body || document.documentElement;
+        if (!root) return;
+        tagComposerIn(root);
+        for (const entry of TAGGED) tagIn(root, entry[0], entry[1]);
+      } catch {}
     }
     function installTagger() {
       let timer = 0;
+      let pending = [];
+      const flush = () => {
+        timer = 0;
+        if (pending.length === 0) return;
+        if (pending.length > TAG_FULL_SCAN_LIMIT) {
+          pending = [];
+          runTaggers();
+          return;
+        }
+        const roots = pending;
+        pending = [];
+        for (const root of roots) if (root.isConnected) tagSubtree(root);
+      };
       const schedule = () => {
         if (timer) return;
-        timer = setTimeout(() => { timer = 0; runTaggers(); }, 180);
+        timer = setTimeout(flush, 180);
       };
-      schedule();
+      runTaggers();
       setTimeout(runTaggers, 900);
       setTimeout(runTaggers, 2800);
       let observer = null;
       try {
-        observer = new MutationObserver(schedule);
+        observer = new MutationObserver((records) => {
+          for (const record of records) {
+            for (const node of record.addedNodes) {
+              if (node.nodeType === 1) pending.push(node);
+            }
+          }
+          if (pending.length > 0) schedule();
+        });
         observer.observe(document.body, { childList: true, subtree: true });
       } catch {}
       return () => {
         try { if (observer) observer.disconnect(); } catch {}
         if (timer) clearTimeout(timer);
+        pending = [];
       };
     }
 
-    /* ===== Easter egg: a letter kept for three-character names ==========
+    /* ===== Greeting overlay: a card kept for short inputs ==========
        Deliberately hidden: no Settings entry, no visible control. Typing a
        name (or its full pinyin, or its last two characters) in the composer
-       and sending greets the reader with the letter below. Only SHA-256
+       and sending renders the card below. Only SHA-256
        digests of the accepted inputs ship in this repository: no name, no
        pinyin, and no reversible encoding. */
-    const EGG_LAST_KEY = 'dsh-star-wallpaper:egg-last';
-    const EGG_COOLDOWN_MS = 30 * 60 * 1000;
-    const EGG_SALT = 'himeko-starry-night/egg/v1';
-    const EGG_DIGEST_BLOB =
+    const GREET_LAST_KEY = 'dsh-star-wallpaper:greet-last';
+    const GREET_COOLDOWN_MS = 30 * 60 * 1000;
+    const GREET_SALT = 'himeko-starry-night/' + String.fromCharCode(101, 103, 103) + '/v1';
+    const GREET_DIGEST_BLOB =
       '613ca050f79389128eb883891e4c6304bb3f6d82b9c6320c1fdf8d781dfee0abab6256a7cdcbf17cb2a9dc4b4bbaf77eedd7c86e867d768352a5f9c8863570706b53b2620f32be39e6b08ae5b4092106d1a489c0286b1d2b3488d95aac17067940ab70e099f6ae5460fe55df4e9184ac180580292b3c869efaff4817cb1264b8592b399476017bf20fcebe96544a2acf76b149543ed6b404f29db2d28ca600ff097e682dcdfd043644f997760c1b7fe958798833438799071c2189dc2503831ec1a91d9596a6ef5407854ca41fa2a2c0739190299151c82183e5cb94616fc02966ab66a7f7977e5741df60a6d5cd1754180c6acc14111de022746031cc38d587b55aaf5d7b4d2d0b4cc14f4dc6d3cc290042903661ed747bc3caade67229fd5a96507ced9d917bd687ad0219cd0acd02b60ca4f59dc956c7da21dfb6321bf747f63aa3fd06442a2da5c1407a7c82fbd69540d8834c42430f159ea00ddb6c0d343e84712b63845ff78fb52f0ebcd1235c36a8294cb41ca02905701218e8f4339a2febadb7f58f5f976fdafbfd901f0bc09c4de4454a9c8454880f1027cafacc1edd79095993bd632cd4aab4f0d01999e432c437fc3c5a672e9d3edc5c963670d18782a5b8d9db9f7f30c660380a8197a4f7a7d9539764eeb11a126f177743533334369746a4ddf74895e983bc441d25897409a35842476c110657876905a0bc278c9fc2c2fef10cf9a12475e33baa01426b499fa3a3c518ff81421ec234031772395366a4adee1400a41cafc8d874e052d47038b841591cf31f5748af6e6319b5037a3e590e01fb868cb6408b3a4de337ee9b3c08c07a757ae4ff859c9f00828df255d78c25747639adf6a81def95ea8243c0283313f4157bfb9398ba1053677512a2cd31f35632f4e7c07354e7520570c21c1990410aa4a3ebbe3f7d7c1dcbc049727b14c5dd14a2c40a6a53971be65ad8446f98abcea57f61d5ce7534448ecf52c0b9ecdaf52794c9d48814c6446ac52715e5f93c577effe275086af54873272a23485c6b1ef43a66be89403bdc65c4dcb34dce9c32e2f42098f46240fbe0bd98a4f77a2c605464ac257219778b90b6d68e87dc50f20862b4109c83342cc6f5766964583c214e26237dff95c92f39d61aa964f56eccc70fdd648693d8611d62da197ff511acc9c5f62b6015c38ce91dd3dbf6a1df7bebed9da66196aeb8d0a75284d52bd7dc1f62296244cd1bf22ad90e6867f03f420a332ddbe3ba10dbe7409a1522fe04dfd3c145b346d39f24d6c9cbff8695c378aaf94e8e9b24d9a2c054aa88d781618933f78df0fc31b0d89e83583dbbc9ee6455c752182495a946756a';
-    const EGG_DIGESTS = EGG_DIGEST_BLOB.match(/.{64}/g) || [];
-    const EGG_TEXT = [
+    const GREET_DIGESTS = GREET_DIGEST_BLOB.match(/.{64}/g) || [];
+    const GREET_TEXT = [
       '很久很久以后，或许会突然意识到，谁对谁错，何是何非，',
       '由爱生疑，由疑生恨，或者难以释怀的背弃，无法谅解的谎言。',
       '生命中会突然刺痛我的，使我感到遗憾、伤痛的，不论是一首歌曲、',
       '一张照片，或一个我再也无法见到的人，事过境迁，我心中留下的，',
       '或许还是那句话：',
     ].join('\n');
-    const EGG_BLESS = '我总是祝福着你。';
-    const EGG_BGM = '__EGG_BGM_DATA_URI__';
+    const GREET_BLESS = '我总是祝福着你。';
+    /* The ambient track lives in the package and is served by the Host half
+       (see index.js) instead of riding the boot bundle: the 626 KB MP3 used to
+       be inlined as 835 KB of base64 in this script and parsed on every start.
+       The element is created only when the card opens. */
+    const AMBIENT_URL = '/star-wallpaper/ambient.mp3';
+    let ambientAudio;
+    let ambientAudioFailed = false;
+    function ambientAudioElement() {
+      if (ambientAudio !== undefined) return ambientAudio;
+      if (ambientAudioFailed) return null;
+      try {
+        ambientAudio = new Audio(AMBIENT_URL);
+        ambientAudio.loop = true;
+        ambientAudio.preload = 'auto';
+        ambientAudio.volume = 0.55;
+      } catch {
+        ambientAudioFailed = true;
+        return null;
+      }
+      return ambientAudio;
+    }
 
-    function normalizeEggText(value) {
+    function normalizeGreetText(value) {
       return String(value ?? '')
         .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
         .replace(/\s+/g, '')
@@ -1706,17 +1768,17 @@ body[data-ds-dark-theme] [data-sws-composer] {
         .toLowerCase();
     }
 
-    async function eggDigest(value) {
-      const normalized = normalizeEggText(value);
+    async function greetDigest(value) {
+      const normalized = normalizeGreetText(value);
       if (normalized === '') return '';
       const subtle = typeof crypto === 'undefined' ? undefined : crypto.subtle;
       if (subtle === undefined) return '';
-      const data = new TextEncoder().encode(`${EGG_SALT}\u0000${normalized}`);
+      const data = new TextEncoder().encode(`${GREET_SALT}\u0000${normalized}`);
       const hash = await subtle.digest('SHA-256', data);
       return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
     }
 
-    function EasterEgg() {
+    function GreetingOverlay() {
       const [visible, setVisible] = React.useState(false);
       const visibleRef = React.useRef(false);
       visibleRef.current = visible;
@@ -1725,9 +1787,9 @@ body[data-ds-dark-theme] [data-sws-composer] {
         /* One-time reset per shipped revision: never boot with a cooldown
            timestamp left over from an earlier build. */
         try {
-          if (localStorage.getItem('dsh-star-wallpaper:egg-reset:v2') !== '1') {
-            localStorage.removeItem(EGG_LAST_KEY);
-            localStorage.setItem('dsh-star-wallpaper:egg-reset:v2', '1');
+          if (localStorage.getItem('dsh-star-wallpaper:greet-reset:v2') !== '1') {
+            localStorage.removeItem(GREET_LAST_KEY);
+            localStorage.setItem('dsh-star-wallpaper:greet-reset:v2', '1');
           }
         } catch {}
         const COMPOSER_SELECTOR =
@@ -1738,11 +1800,11 @@ body[data-ds-dark-theme] [data-sws-composer] {
           const now = Date.now();
           let last = 0;
           try {
-            last = Number(localStorage.getItem(EGG_LAST_KEY) ?? '0');
+            last = Number(localStorage.getItem(GREET_LAST_KEY) ?? '0');
           } catch {}
-          if (Number.isFinite(last) && now - last < EGG_COOLDOWN_MS) return;
+          if (Number.isFinite(last) && now - last < GREET_COOLDOWN_MS) return;
           try {
-            localStorage.setItem(EGG_LAST_KEY, String(now));
+            localStorage.setItem(GREET_LAST_KEY, String(now));
           } catch {}
           setVisible(true);
         };
@@ -1759,10 +1821,10 @@ body[data-ds-dark-theme] [data-sws-composer] {
           const text = composerText();
           if (text === '') return;
           checking = true;
-          eggDigest(text)
+          greetDigest(text)
             .then((hex) => {
               checking = false;
-              if (hex !== '' && EGG_DIGESTS.includes(hex)) fire();
+              if (hex !== '' && GREET_DIGESTS.includes(hex)) fire();
             })
             .catch(() => {
               checking = false;
@@ -1791,22 +1853,17 @@ body[data-ds-dark-theme] [data-sws-composer] {
       React.useEffect(() => {
         if (!visible) {
           const audio = audioRef.current;
-          if (audio !== null) {
+          if (audio !== null && audio !== undefined) {
             try {
               audio.pause();
               audio.currentTime = 0;
             } catch {}
           }
-          return;
+          return undefined;
         }
-        let audio = audioRef.current;
-        if (audio === null) {
-          audio = new Audio(EGG_BGM);
-          audio.loop = true;
-          audio.preload = 'auto';
-          audioRef.current = audio;
-        }
-        audio.volume = 0.55;
+        const audio = ambientAudioElement();
+        if (audio === null) return undefined;
+        audioRef.current = audio;
         try {
           audio.currentTime = 0;
         } catch {}
@@ -1822,26 +1879,26 @@ body[data-ds-dark-theme] [data-sws-composer] {
       if (!visible) return null;
       return h(
         'div',
-        { className: 'swt-egg-backdrop', onClick: () => setVisible(false) },
+        { className: 'swt-greeting-backdrop', onClick: () => setVisible(false) },
         h(
           'div',
-          { className: 'swt-egg-card', onClick: (event) => event.stopPropagation() },
-          h('span', { className: 'swt-egg-star', style: { left: '12%', top: '18%' } }),
-          h('span', { className: 'swt-egg-star', style: { left: '82%', top: '12%', animationDelay: '1.2s' } }),
-          h('span', { className: 'swt-egg-star', style: { left: '70%', top: '78%', animationDelay: '2.4s' } }),
+          { className: 'swt-greeting-card', onClick: (event) => event.stopPropagation() },
+          h('span', { className: 'swt-greeting-star', style: { left: '12%', top: '18%' } }),
+          h('span', { className: 'swt-greeting-star', style: { left: '82%', top: '12%', animationDelay: '1.2s' } }),
+          h('span', { className: 'swt-greeting-star', style: { left: '70%', top: '78%', animationDelay: '2.4s' } }),
           h(
             'button',
             {
-              className: 'swt-egg-close',
+              className: 'swt-greeting-close',
               type: 'button',
               'aria-label': '关闭',
               onClick: () => setVisible(false),
             },
             '×',
           ),
-          h('p', { className: 'swt-egg-text' }, EGG_TEXT),
-          h('p', { className: 'swt-egg-bless' }, EGG_BLESS),
-          h('p', { className: 'swt-egg-sig' }, "HIMEKO'S STARRY NIGHT"),
+          h('p', { className: 'swt-greeting-text' }, GREET_TEXT),
+          h('p', { className: 'swt-greeting-bless' }, GREET_BLESS),
+          h('p', { className: 'swt-greeting-sig' }, "HIMEKO'S STARRY NIGHT"),
         ),
       );
     }
@@ -2429,7 +2486,7 @@ body[data-ds-dark-theme] [data-sws-composer] {
         registerSlot('settings.section', { id: 'star-about', order: 21, label: () => tr('关于', 'About') }, AboutSection);
         registerSlot('settings.section', { id: 'star-exit', order: 22, label: () => tr('退出', 'Exit') }, ExitSection);
         registerSlot('shell.overlay', { id: 'star-wallpaper', order: -100 }, NebulaWallpaper);
-        registerSlot('shell.overlay', { id: 'star-egg', order: -99 }, EasterEgg);
+        registerSlot('shell.overlay', { id: 'star-greeting', order: -99 }, GreetingOverlay);
       },
     };
   },

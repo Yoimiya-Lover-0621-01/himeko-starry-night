@@ -187,11 +187,70 @@ ${whaleReducedMotion}
 `;
 }
 
+const AMBIENT_ROUTE = '/star-wallpaper/ambient.mp3';
+
+/**
+ * Serve the ambient track on demand.
+ *
+ * The Client half used to carry the track as an inline data URI, so every
+ * start paid for 835 KB of base64 whether or not it is ever played.
+ * The bytes stay in the package; this route hands them out only when the
+ * Client asks for them. Registration is best-effort: without a web server
+ * (CLI-only profiles) the theme still loads, it simply has no music.
+ * @param ctx - Host plugin context carrying the web server service.
+ */
+function registerBgmRoute(ctx) {
+  let bytes;
+  try {
+    bytes = readFileSync(new URL('./assets/ambient.mp3', import.meta.url));
+  } catch {
+    return;
+  }
+  let webServer;
+  try {
+    webServer = typeof ctx.get === 'function' ? ctx.get('webServer') : ctx.webServer;
+  } catch {
+    return;
+  }
+  if (!webServer || typeof webServer.register !== 'function') return;
+  try {
+    const dispose = webServer.register({
+      kind: 'exact',
+      path: AMBIENT_ROUTE,
+      handler(request, response) {
+        try {
+          if (request.method !== 'GET' && request.method !== 'HEAD') {
+            response.statusCode = 405;
+            response.setHeader('Allow', 'GET, HEAD');
+            response.end();
+            return;
+          }
+          response.statusCode = 200;
+          response.setHeader('Content-Type', 'audio/mpeg');
+          response.setHeader('Content-Length', String(bytes.length));
+          response.setHeader('Cache-Control', 'public, max-age=86400');
+          if (request.method === 'HEAD') {
+            response.end();
+            return;
+          }
+          response.end(bytes);
+        } catch {}
+      },
+    });
+    ctx.on('dispose', () => {
+      try {
+        dispose();
+      } catch {}
+    });
+  } catch {}
+}
+
 /**
  * Register the boot-splash stylesheet with the Web server's index renderer.
  * @param ctx - Host plugin context carrying the event bus.
  */
 export function apply(ctx) {
+  registerBgmRoute(ctx);
   let style = '';
   try {
     style = buildBootStyle();
