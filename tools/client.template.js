@@ -1474,6 +1474,7 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
       '或许还是那句话：',
     ].join('\n');
     const EGG_BLESS = '我总是祝福着你。';
+    const EGG_BGM = '__EGG_BGM_DATA_URI__';
 
     function normalizeEggText(value) {
       return String(value ?? '')
@@ -1497,6 +1498,7 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
       const [visible, setVisible] = React.useState(false);
       const visibleRef = React.useRef(false);
       visibleRef.current = visible;
+      const audioRef = React.useRef(null);
       React.useEffect(() => {
         /* One-time reset per shipped revision: never boot with a cooldown
            timestamp left over from an earlier build. */
@@ -1564,6 +1566,37 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
           document.removeEventListener('pointerdown', onPointer, true);
         };
       }, []);
+      React.useEffect(() => {
+        if (!visible) {
+          const audio = audioRef.current;
+          if (audio !== null) {
+            try {
+              audio.pause();
+              audio.currentTime = 0;
+            } catch {}
+          }
+          return;
+        }
+        let audio = audioRef.current;
+        if (audio === null) {
+          audio = new Audio(EGG_BGM);
+          audio.loop = true;
+          audio.preload = 'auto';
+          audioRef.current = audio;
+        }
+        audio.volume = 0.55;
+        try {
+          audio.currentTime = 0;
+        } catch {}
+        const played = audio.play();
+        if (played !== undefined && typeof played.catch === 'function') played.catch(() => {});
+        return () => {
+          try {
+            audio.pause();
+            audio.currentTime = 0;
+          } catch {}
+        };
+      }, [visible]);
       if (!visible) return null;
       return h(
         'div',
