@@ -172,6 +172,8 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
 [class~="EBLgjq_trigger"],
 [class~="foD-wG_trigger"],
 [class~="b06baG_label"],
+[class~="oXE0lW_trigger"],
+[class~="oXE0lW_switcherTrigger"],
 [class~="dzXS4q_button"],
 [class~="Dc7zOa_headerUtilities"] button,
 [class~="Dc7zOa_headerUtilities"] [role="button"],
@@ -190,12 +192,16 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
 [class~="EBLgjq_trigger"]:hover,
 [class~="foD-wG_trigger"]:hover,
 [class~="b06baG_label"]:hover,
+[class~="oXE0lW_trigger"]:hover,
+[class~="oXE0lW_switcherTrigger"]:hover,
 [class~="dzXS4q_button"]:hover,
 [class~="Dc7zOa_headerUtilities"] button:hover,
 [class~="Dc7zOa_headerUtilities"] [role="button"]:hover,
 [class~="Dc7zOa_headerCorner"] button:hover,
 [class~="EBLgjq_trigger"][aria-expanded="true"],
 [class~="foD-wG_trigger"][aria-expanded="true"],
+[class~="oXE0lW_trigger"][aria-expanded="true"],
+[class~="oXE0lW_switcherTrigger"][aria-expanded="true"],
 [class~="Dc7zOa_headerUtilities"] button[aria-expanded="true"] {
   background-image: linear-gradient(
     180deg,
@@ -213,6 +219,109 @@ body[data-ds-dark-theme] [class~="RlGAzG_card"] {
     0 6px 16px rgba(0, 0, 0, 0.22) !important;
   color: var(--dsw-alias-label-primary, #f1f2ff) !important;
 }
+/* ===== Easter egg: a quiet letter, surfaced only by chosen words ========
+   The trigger words are never shipped: they live in localStorage and are
+   edited in Settings → 彩蛋. This stylesheet only paints the card when the
+   overlay component decides to open. */
+.swt-egg-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(4, 6, 18, 0.44);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  backdrop-filter: blur(12px) saturate(120%);
+  animation: swt-egg-fade 0.55s ease both;
+}
+.swt-egg-card {
+  position: relative;
+  box-sizing: border-box;
+  width: min(560px, 100%);
+  padding: 34px 36px 26px;
+  border-radius: 18px;
+  overflow: hidden;
+  color: #e2e5ff;
+  background:
+    radial-gradient(120% 90% at 16% -12%, rgba(190, 190, 255, 0.16) 0%, rgba(190, 190, 255, 0) 62%),
+    radial-gradient(90% 80% at 88% 116%, rgba(140, 120, 255, 0.10) 0%, rgba(140, 120, 255, 0) 58%),
+    rgba(16, 18, 46, 0.74);
+  -webkit-backdrop-filter: blur(46px) saturate(170%);
+  backdrop-filter: blur(46px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    0 34px 90px rgba(0, 0, 0, 0.48);
+  animation: swt-egg-rise 0.6s cubic-bezier(0.22, 0.9, 0.25, 1) both;
+}
+.swt-egg-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(230, 232, 255, 0.8);
+  animation: swt-egg-twinkle 4.5s ease-in-out infinite;
+}
+.swt-egg-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 2;
+  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: pre-wrap;
+  color: #dfe3ff;
+}
+.swt-egg-bless {
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 17px;
+  letter-spacing: 0.22em;
+  color: #dcd6ff;
+  text-shadow: 0 0 18px rgba(170, 160, 255, 0.35);
+}
+.swt-egg-sig {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.34em;
+  color: rgba(160, 166, 210, 0.58);
+}
+.swt-egg-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  color: rgba(220, 224, 255, 0.65);
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.swt-egg-close:hover {
+  color: #f1f2ff;
+  background: rgba(255, 255, 255, 0.10);
+}
+@keyframes swt-egg-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes swt-egg-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes swt-egg-twinkle {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 0.85; }
+}
+
 /* Settings modal builds its panel on the translucent layer-2 token; give the
    panel itself a readable frosted backing so settings pages stay usable. */
 body:not([data-ds-dark-theme]) [class~="wCInkW_panel"] {
@@ -1345,6 +1454,119 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
       return h('style', { 'data-dsh-plugin': 'star-wallpaper' }, CSS);
     }
 
+    /* ===== Easter egg: a letter kept for two words ======================
+       Deliberately hidden: no Settings entry, no visible control. Typing one
+       of the trigger words in the composer opens the letter once, with a
+       cooldown so it never nags. The trigger words are role names rather than
+       personal names, so nothing identifying ships in the public plugin. */
+    const EGG_LAST_KEY = 'dsh-star-wallpaper:egg-last';
+    const EGG_COOLDOWN_MS = 30 * 60 * 1000;
+    const EGG_WORDS = ['班长', '团支书'];
+    const EGG_TEXT = [
+      '很久很久以后，或许会突然意识到，谁对谁错，何是何非，',
+      '由爱生疑，由疑生恨，或者难以释怀的背弃，无法谅解的谎言。',
+      '生命中会突然刺痛我的，使我感到遗憾、伤痛的，不论是一首歌曲、',
+      '一张照片，或一个我再也无法见到的人，事过境迁，我心中留下的，',
+      '或许还是那句话：',
+    ].join('\n');
+    const EGG_BLESS = '我总是祝福着你。';
+
+    function readEggWords() {
+      return EGG_WORDS;
+    }
+
+    function EasterEgg() {
+      const [visible, setVisible] = React.useState(false);
+      const visibleRef = React.useRef(false);
+      visibleRef.current = visible;
+      React.useEffect(() => {
+        /* Reset the cooldown once per shipped revision, so a restarted build
+           never boots with a stale timestamp from a previous session. */
+        try {
+          if (localStorage.getItem('dsh-star-wallpaper:egg-reset') !== '1') {
+            localStorage.removeItem(EGG_LAST_KEY);
+            localStorage.setItem('dsh-star-wallpaper:egg-reset', '1');
+          }
+        } catch {}
+        const close = () => setVisible(false);
+        const onKey = (event) => {
+          if (event.key === 'Escape') close();
+        };
+        const fire = () => {
+          if (visibleRef.current) return;
+          const now = Date.now();
+          let last = 0;
+          try {
+            last = Number(localStorage.getItem(EGG_LAST_KEY) ?? '0');
+          } catch {}
+          if (Number.isFinite(last) && now - last < EGG_COOLDOWN_MS) return;
+          try {
+            localStorage.setItem(EGG_LAST_KEY, String(now));
+          } catch {}
+          setVisible(true);
+        };
+        const matches = (text) => text !== '' && readEggWords().some((word) => text.includes(word));
+        const COMPOSER_SELECTOR =
+          '[contenteditable]:not([contenteditable="false"]), [data-lexical-editor="true"]';
+        const isComposer = (element) =>
+          element !== null && element.closest('[role="dialog"]') === null;
+        /* Fast path: input/paste events from the composer. */
+        const onInput = (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) return;
+          const editable = target.closest(COMPOSER_SELECTOR);
+          if (!isComposer(editable)) return;
+          if (matches(editable.innerText || editable.textContent || '')) fire();
+        };
+        /* Safety net: the composer is a rich-text editor, and some insertions
+           (IME, clipboard, programmatic) do not surface a plain input event.
+           A light poll keeps the egg reliable without touching typing. */
+        const poll = () => {
+          if (visibleRef.current) return;
+          for (const editable of document.querySelectorAll(COMPOSER_SELECTOR)) {
+            if (!isComposer(editable)) continue;
+            if (matches(editable.innerText || editable.textContent || '')) {
+              fire();
+              return;
+            }
+          }
+        };
+        document.addEventListener('input', onInput, true);
+        document.addEventListener('keydown', onKey, true);
+        const timer = window.setInterval(poll, 900);
+        return () => {
+          document.removeEventListener('input', onInput, true);
+          document.removeEventListener('keydown', onKey, true);
+          window.clearInterval(timer);
+        };
+      }, []);
+      if (!visible) return null;
+      return h(
+        'div',
+        { className: 'swt-egg-backdrop', onClick: () => setVisible(false) },
+        h(
+          'div',
+          { className: 'swt-egg-card', onClick: (event) => event.stopPropagation() },
+          h('span', { className: 'swt-egg-star', style: { left: '12%', top: '18%' } }),
+          h('span', { className: 'swt-egg-star', style: { left: '82%', top: '12%', animationDelay: '1.2s' } }),
+          h('span', { className: 'swt-egg-star', style: { left: '70%', top: '78%', animationDelay: '2.4s' } }),
+          h(
+            'button',
+            {
+              className: 'swt-egg-close',
+              type: 'button',
+              'aria-label': '关闭',
+              onClick: () => setVisible(false),
+            },
+            '×',
+          ),
+          h('p', { className: 'swt-egg-text' }, EGG_TEXT),
+          h('p', { className: 'swt-egg-bless' }, EGG_BLESS),
+          h('p', { className: 'swt-egg-sig' }, "HIMEKO'S STARRY NIGHT"),
+        ),
+      );
+    }
+
     /* The Windows title-bar menu buttons ("应用" / "编辑") are built by the
        desktop preload inside a shadow root, so the page stylesheet cannot see
        them. Their hover/expanded paint uses the shared interactive token, but
@@ -1901,6 +2123,11 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
           id: 'star-wallpaper',
           order: -100,
         }, NebulaWallpaper));
+        ctx.slots.inject('shell.overlay', () => ctx.slots.register({
+          name: 'shell.overlay',
+          id: 'star-egg',
+          order: -99,
+        }, EasterEgg));
       },
     };
   },
