@@ -1472,6 +1472,93 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
       return h('style', { 'data-dsh-plugin': 'star-wallpaper' }, CSS);
     }
 
+    /* ===== Compatibility guard =========================================
+       The stylesheet targets class names from one DSH web-client build. A DSH
+       upgrade re-hashes them and the hashed layer goes inert all at once.
+       Fingerprint the shell instead of trusting it: report the result in
+       Settings -> About and window.__SWS_COMPAT__, and degrade the status
+       honestly instead of silently painting half a theme. Never throw: a
+       theme must not be able to take the host down. */
+    const THEME_VERSION = '1.1.0';
+    const COMPAT = (() => {
+      const state = {
+        theme: THEME_VERSION,
+        dsh: '',
+        level: 'unknown',
+        required: 0,
+        requiredMatched: 0,
+        optional: 0,
+        optionalMatched: 0,
+        slotsOk: 0,
+        slotsTotal: 0,
+        desktop: false,
+        degraded: false,
+      };
+      // The required anchors are visible on every session state (welcome or
+      // conversation); the optional ones only inside a conversation.
+      const ANCHORS = [
+        ['sidebar', '[class*="_2H3hWW_"]', true],
+        ['composer', '[class*="RlGAzG_"]', true],
+        ['account chip', '[class*="ET65mq_"]', true],
+        ['session header', '[class*="Dc7zOa_"]', false],
+        ['usage dock', '[class*="iq1doa_"]', false],
+      ];
+      const has = (selector) => {
+        try { return !!document.querySelector(selector); } catch { return false; }
+      };
+      const probe = () => {
+        try {
+          let required = 0;
+          let requiredMatched = 0;
+          let optional = 0;
+          let optionalMatched = 0;
+          for (const entry of ANCHORS) {
+            const ok = has(entry[1]);
+            if (entry[2]) {
+              required += 1;
+              if (ok) requiredMatched += 1;
+            } else {
+              optional += 1;
+              if (ok) optionalMatched += 1;
+            }
+          }
+          state.required = required;
+          state.requiredMatched = requiredMatched;
+          state.optional = optional;
+          state.optionalMatched = optionalMatched;
+          state.desktop = !!window.dshDesktop || has('[data-windows-menu]');
+          try {
+            const release = readRelease();
+            state.dsh = release.version || '';
+          } catch {}
+          const forced = window.__SWS_FORCE_COMPAT__;
+          let level;
+          if (forced === 'full' || forced === 'partial' || forced === 'base') level = forced;
+          else if (requiredMatched >= required) level = 'full';
+          else if (requiredMatched >= 2) level = 'partial';
+          else level = document.body ? 'base' : 'unknown';
+          if (!forced && level === 'full' && state.slotsTotal > 0 && state.slotsOk < state.slotsTotal) level = 'partial';
+          state.level = level;
+          state.degraded = level === 'base';
+          try {
+            document.body.setAttribute('data-sws-compat', level);
+            document.body.toggleAttribute('data-sws-degraded', state.degraded);
+          } catch {}
+          window.__SWS_COMPAT__ = state;
+          const line = '[star-wallpaper] DSH ' + (state.dsh || 'unknown') + ' · compat ' + level +
+            ' · anchors ' + requiredMatched + '/' + required;
+          if (level === 'full') console.info(line);
+          else console.info(line + ' · 主题已降级，建议更新主题插件');
+        } catch {}
+      };
+      const recordSlot = (ok) => {
+        state.slotsTotal += 1;
+        if (ok) state.slotsOk += 1;
+      };
+      return { state, probe, recordSlot, has };
+    })();
+    const runCompatProbe = () => COMPAT.probe();
+
     /* ===== Easter egg: a letter kept for three-character names ==========
        Deliberately hidden: no Settings entry, no visible control. Typing a
        name (or its full pinyin, or its last two characters) in the composer
@@ -2047,6 +2134,14 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
       return { version: '', commit: '' };
     }
 
+    function compatText() {
+      const state = COMPAT.state;
+      if (state.level === 'full') return tr('完整（UI 指纹匹配）', 'Full (UI fingerprint matched)');
+      if (state.level === 'partial') return tr('部分适配（已降级）', 'Partial (degraded)');
+      if (state.level === 'base') return tr('基础模式（仅壁纸与变量，建议更新主题）', 'Base only (wallpaper + tokens; update the theme)');
+      return tr('检测中…', 'Checking…');
+    }
+
     function AboutSection() {
       const release = readRelease();
       const [busy, setBusy] = React.useState(false);
@@ -2088,7 +2183,14 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
                   release.commit ? `${release.version} (${release.commit.slice(0, 7)})` : release.version,
                 )
               : null,
-            row(tr('主题', 'Theme'), tr('姬子的星月夜 · 1.0.0', "Himeko's Starry Night · 1.0.0")),
+            row(tr('主题', 'Theme'), tr('姬子的星月夜 · ' + THEME_VERSION, "Himeko's Starry Night · " + THEME_VERSION)),
+            row(tr('兼容状态', 'Compatibility'), compatText()),
+            row(
+              tr('界面锚点', 'UI anchors'),
+              '必需 ' + COMPAT.state.requiredMatched + ' / ' + COMPAT.state.required +
+                ' · 可选 ' + COMPAT.state.optionalMatched + ' / ' + COMPAT.state.optional +
+                (COMPAT.state.slotsTotal ? ' · 扩展 ' + COMPAT.state.slotsOk + ' / ' + COMPAT.state.slotsTotal : ''),
+            ),
             row(tr('壁纸', 'Wallpaper'), tr('星云 · 莫奈取色', 'Nebula · Monet palette')),
           ].filter(Boolean),
         ),
@@ -2155,6 +2257,13 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
           lockDark();
           ctx.on('theme/change', lockDark);
         }
+        // Compatibility probe. Fail-soft: a moved DSH build degrades the
+        // theme status, never the host.
+        try {
+          runCompatProbe();
+          setTimeout(runCompatProbe, 400);
+          setTimeout(runCompatProbe, 2000);
+        } catch {}
         // Title-bar menu glass, caption overlay, and the self-drawn menus.
         const ensureMenuBar = () => {
           const host = document.querySelector('[data-windows-menu]');
@@ -2181,28 +2290,23 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
         ctx.on('dispose', () => menuObserver.disconnect());
         ctx.on('dispose', () => closeMenu());
         // 「关于」 and 「退出」 live in Settings now, right below Agent 预设.
-        ctx.slots.inject('settings.section', () => ctx.slots.register({
-          name: 'settings.section',
-          id: 'star-about',
-          order: 21,
-          label: () => tr('关于', 'About'),
-        }, AboutSection));
-        ctx.slots.inject('settings.section', () => ctx.slots.register({
-          name: 'settings.section',
-          id: 'star-exit',
-          order: 22,
-          label: () => tr('退出', 'Exit'),
-        }, ExitSection));
-        ctx.slots.inject('shell.overlay', () => ctx.slots.register({
-          name: 'shell.overlay',
-          id: 'star-wallpaper',
-          order: -100,
-        }, NebulaWallpaper));
-        ctx.slots.inject('shell.overlay', () => ctx.slots.register({
-          name: 'shell.overlay',
-          id: 'star-egg',
-          order: -99,
-        }, EasterEgg));
+        // Register every slot through one fallback: a renamed/removed slot in a
+        // future DSH build must only drop that extension, not the whole theme.
+        const registerSlot = (slot, options, component) => {
+          try {
+            ctx.slots.inject(slot, () => ctx.slots.register({ name: slot, ...options }, component));
+            COMPAT.recordSlot(true);
+          } catch (error) {
+            COMPAT.recordSlot(false);
+            try {
+              console.info('[star-wallpaper] slot ' + slot + ' unavailable: ' + (error && error.message ? error.message : error));
+            } catch {}
+          }
+        };
+        registerSlot('settings.section', { id: 'star-about', order: 21, label: () => tr('关于', 'About') }, AboutSection);
+        registerSlot('settings.section', { id: 'star-exit', order: 22, label: () => tr('退出', 'Exit') }, ExitSection);
+        registerSlot('shell.overlay', { id: 'star-wallpaper', order: -100 }, NebulaWallpaper);
+        registerSlot('shell.overlay', { id: 'star-egg', order: -99 }, EasterEgg);
       },
     };
   },
