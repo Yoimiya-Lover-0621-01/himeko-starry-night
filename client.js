@@ -1454,14 +1454,18 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
       return h('style', { 'data-dsh-plugin': 'star-wallpaper' }, CSS);
     }
 
-    /* ===== Easter egg: a letter kept for two words ======================
-       Deliberately hidden: no Settings entry, no visible control. Typing one
-       of the trigger words in the composer opens the letter once, with a
-       cooldown so it never nags. The trigger words are role names rather than
-       personal names, so nothing identifying ships in the public plugin. */
+    /* ===== Easter egg: a letter kept for three-character names ==========
+       Deliberately hidden: no Settings entry, no visible control. Typing a
+       name (or its full pinyin, or its last two characters) in the composer
+       and sending greets the reader with the letter below. Only SHA-256
+       digests of the accepted inputs ship in this repository: no name, no
+       pinyin, and no reversible encoding. */
     const EGG_LAST_KEY = 'dsh-star-wallpaper:egg-last';
     const EGG_COOLDOWN_MS = 30 * 60 * 1000;
-    const EGG_WORDS = ['班长', '团支书'];
+    const EGG_SALT = 'himeko-starry-night/egg/v1';
+    const EGG_DIGEST_BLOB =
+      '613ca050f79389128eb883891e4c6304bb3f6d82b9c6320c1fdf8d781dfee0abab6256a7cdcbf17cb2a9dc4b4bbaf77eedd7c86e867d768352a5f9c8863570706b53b2620f32be39e6b08ae5b4092106d1a489c0286b1d2b3488d95aac17067940ab70e099f6ae5460fe55df4e9184ac180580292b3c869efaff4817cb1264b8592b399476017bf20fcebe96544a2acf76b149543ed6b404f29db2d28ca600ff097e682dcdfd043644f997760c1b7fe958798833438799071c2189dc2503831ec1a91d9596a6ef5407854ca41fa2a2c0739190299151c82183e5cb94616fc02966ab66a7f7977e5741df60a6d5cd1754180c6acc14111de022746031cc38d587b55aaf5d7b4d2d0b4cc14f4dc6d3cc290042903661ed747bc3caade67229fd5a96507ced9d917bd687ad0219cd0acd02b60ca4f59dc956c7da21dfb6321bf747f63aa3fd06442a2da5c1407a7c82fbd69540d8834c42430f159ea00ddb6c0d343e84712b63845ff78fb52f0ebcd1235c36a8294cb41ca02905701218e8f4339a2febadb7f58f5f976fdafbfd901f0bc09c4de4454a9c8454880f1027cafacc1edd79095993bd632cd4aab4f0d01999e432c437fc3c5a672e9d3edc5c963670d18782a5b8d9db9f7f30c660380a8197a4f7a7d9539764eeb11a126f177743533334369746a4ddf74895e983bc441d25897409a35842476c110657876905a0bc278c9fc2c2fef10cf9a12475e33baa01426b499fa3a3c518ff81421ec234031772395366a4adee1400a41cafc8d874e052d47038b841591cf31f5748af6e6319b5037a3e590e01fb868cb6408b3a4de337ee9b3c08c07a757ae4ff859c9f00828df255d78c25747639adf6a81def95ea8243c0283313f4157bfb9398ba1053677512a2cd31f35632f4e7c07354e7520570c21c1990410aa4a3ebbe3f7d7c1dcbc049727b14c5dd14a2c40a6a53971be65ad8446f98abcea57f61d5ce7534448ecf52c0b9ecdaf52794c9d48814c6446ac52715e5f93c577effe275086af54873272a23485c6b1ef43a66be89403bdc65c4dcb34dce9c32e2f42098f46240fbe0bd98a4f77a2c605464ac257219778b90b6d68e87dc50f20862b4109c83342cc6f5766964583c214e26237dff95c92f39d61aa964f56eccc70fdd648693d8611d62da197ff511acc9c5f62b6015c38ce91dd3dbf6a1df7bebed9da66196aeb8d0a75284d52bd7dc1f62296244cd1bf22ad90e6867f03f420a332ddbe3ba10dbe7409a1522fe04dfd3c145b346d39f24d6c9cbff8695c378aaf94e8e9b24d9a2c054aa88d781618933f78df0fc31b0d89e83583dbbc9ee6455c752182495a946756a';
+    const EGG_DIGESTS = EGG_DIGEST_BLOB.match(/.{64}/g) || [];
     const EGG_TEXT = [
       '很久很久以后，或许会突然意识到，谁对谁错，何是何非，',
       '由爱生疑，由疑生恨，或者难以释怀的背弃，无法谅解的谎言。',
@@ -1471,8 +1475,22 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
     ].join('\n');
     const EGG_BLESS = '我总是祝福着你。';
 
-    function readEggWords() {
-      return EGG_WORDS;
+    function normalizeEggText(value) {
+      return String(value ?? '')
+        .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+        .replace(/\s+/g, '')
+        .replace(/[^\p{L}\p{N}]/gu, '')
+        .toLowerCase();
+    }
+
+    async function eggDigest(value) {
+      const normalized = normalizeEggText(value);
+      if (normalized === '') return '';
+      const subtle = typeof crypto === 'undefined' ? undefined : crypto.subtle;
+      if (subtle === undefined) return '';
+      const data = new TextEncoder().encode(`${EGG_SALT}\u0000${normalized}`);
+      const hash = await subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
     }
 
     function EasterEgg() {
@@ -1480,18 +1498,17 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
       const visibleRef = React.useRef(false);
       visibleRef.current = visible;
       React.useEffect(() => {
-        /* Reset the cooldown once per shipped revision, so a restarted build
-           never boots with a stale timestamp from a previous session. */
+        /* One-time reset per shipped revision: never boot with a cooldown
+           timestamp left over from an earlier build. */
         try {
-          if (localStorage.getItem('dsh-star-wallpaper:egg-reset') !== '1') {
+          if (localStorage.getItem('dsh-star-wallpaper:egg-reset:v2') !== '1') {
             localStorage.removeItem(EGG_LAST_KEY);
-            localStorage.setItem('dsh-star-wallpaper:egg-reset', '1');
+            localStorage.setItem('dsh-star-wallpaper:egg-reset:v2', '1');
           }
         } catch {}
-        const close = () => setVisible(false);
-        const onKey = (event) => {
-          if (event.key === 'Escape') close();
-        };
+        const COMPOSER_SELECTOR =
+          '[contenteditable]:not([contenteditable="false"]), [data-lexical-editor="true"]';
+        let checking = false;
         const fire = () => {
           if (visibleRef.current) return;
           const now = Date.now();
@@ -1505,39 +1522,46 @@ button[class*="iq1doa_pill"][aria-expanded="true"] {
           } catch {}
           setVisible(true);
         };
-        const matches = (text) => text !== '' && readEggWords().some((word) => text.includes(word));
-        const COMPOSER_SELECTOR =
-          '[contenteditable]:not([contenteditable="false"]), [data-lexical-editor="true"]';
-        const isComposer = (element) =>
-          element !== null && element.closest('[role="dialog"]') === null;
-        /* Fast path: input/paste events from the composer. */
-        const onInput = (event) => {
+        const composerText = () => {
+          for (const editable of document.querySelectorAll(COMPOSER_SELECTOR)) {
+            if (editable.closest('[role="dialog"]') !== null) continue;
+            const text = (editable.innerText || editable.textContent || '').trim();
+            if (text !== '') return text;
+          }
+          return '';
+        };
+        const checkOnSend = () => {
+          if (visibleRef.current || checking) return;
+          const text = composerText();
+          if (text === '') return;
+          checking = true;
+          eggDigest(text)
+            .then((hex) => {
+              checking = false;
+              if (hex !== '' && EGG_DIGESTS.includes(hex)) fire();
+            })
+            .catch(() => {
+              checking = false;
+            });
+        };
+        const onKey = (event) => {
+          if (event.key === 'Escape') setVisible(false);
+          if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+          const active = document.activeElement;
+          if (!(active instanceof Element) || active.closest(COMPOSER_SELECTOR) === null) return;
+          checkOnSend();
+        };
+        const onPointer = (event) => {
           const target = event.target;
           if (!(target instanceof Element)) return;
-          const editable = target.closest(COMPOSER_SELECTOR);
-          if (!isComposer(editable)) return;
-          if (matches(editable.innerText || editable.textContent || '')) fire();
+          if (target.closest('[class~="RlGAzG_primary"], [type="submit"]') === null) return;
+          checkOnSend();
         };
-        /* Safety net: the composer is a rich-text editor, and some insertions
-           (IME, clipboard, programmatic) do not surface a plain input event.
-           A light poll keeps the egg reliable without touching typing. */
-        const poll = () => {
-          if (visibleRef.current) return;
-          for (const editable of document.querySelectorAll(COMPOSER_SELECTOR)) {
-            if (!isComposer(editable)) continue;
-            if (matches(editable.innerText || editable.textContent || '')) {
-              fire();
-              return;
-            }
-          }
-        };
-        document.addEventListener('input', onInput, true);
         document.addEventListener('keydown', onKey, true);
-        const timer = window.setInterval(poll, 900);
+        document.addEventListener('pointerdown', onPointer, true);
         return () => {
-          document.removeEventListener('input', onInput, true);
           document.removeEventListener('keydown', onKey, true);
-          window.clearInterval(timer);
+          document.removeEventListener('pointerdown', onPointer, true);
         };
       }, []);
       if (!visible) return null;
