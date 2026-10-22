@@ -45,6 +45,15 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
 - 启动屏样式只在启动页存在期间生效；桌面端本次运行期间不会出现（boot 注入在宿主启动时采集），
   重启一次 DSH 桌面端后生效。
 
+## 素材与版权
+
+- **星云壁纸**（`assets/nebula.jpg`、`assets/boot.jpg`）：取自游戏《崩坏：星穹铁道》4.4 版本的 CG，
+  版权归米哈游（miHoYo）所有。这里仅作个人欣赏与主题装饰使用，不做任何商业用途；
+  如果要二次分发或商用，请自行替换为拥有授权的图片。
+- **deepseek HARNESS 标志**（`assets/brand-lockup.svg`）与**鲸鱼尾巴加载动画**（`assets/whale-tail.png`）：
+  取自 DeepSeek Harness 官方前端资源，版权归 DeepSeek 所有，这里只用于本主题的界面装饰。
+- 其余 CSS / JS 代码与 `icon.svg` 为本项目原创，使用 MIT 许可证。
+
 ## 安装
 
 ```bash
