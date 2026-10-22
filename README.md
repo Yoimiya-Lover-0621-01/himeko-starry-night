@@ -1,6 +1,6 @@
 # 姬子的星月夜（Himeko's Starry Night）
 
-DeepSeek Harness Web UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃。
+DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃。
 
 ![预览](preview.png)
 
