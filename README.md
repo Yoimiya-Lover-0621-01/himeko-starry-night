@@ -1,5 +1,7 @@
 # 姬子的星月夜（Himeko's Starry Night）
 
+仅在0.2.1-rc2测试通过！！！其他版本慎重！！！
+
 DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃。
 
 ![姬子的星月夜：星云壁纸与液态玻璃界面](preview.png)
