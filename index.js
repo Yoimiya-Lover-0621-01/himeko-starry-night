@@ -15,7 +15,7 @@
  * The style is scoped to `[data-dsh-boot]`, the boot screen's own root, so it
  * disappears the moment the app renders and cannot leak into the UI.
  */
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createReadStream, createWriteStream, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -39,8 +39,9 @@ function assetDataUri(path, mime) {
  * Build the boot-splash stylesheet.
  * @returns the stylesheet text, or an empty string when no asset is available.
  */
-function buildBootStyle() {
-  const wallpaper = assetDataUri('./assets/boot.jpg', 'image/jpeg');
+function buildBootStyle(customWallpaper = '') {
+  const wallpaper =
+    customWallpaper !== '' ? customWallpaper : assetDataUri('./assets/boot.jpg', 'image/jpeg');
   const logo = assetDataUri('./assets/brand-lockup.svg', 'image/svg+xml');
   const whaleTail = assetDataUri('./assets/whale-tail.png', 'image/png');
   const whaleStill = assetDataUri('./assets/whale-tail-still.svg', 'image/svg+xml');
@@ -346,6 +347,327 @@ function registerGreetStateRoute(ctx) {
   } catch {}
 }
 
+const MEDIA_ROUTE = '/star-wallpaper/background';
+const MEDIA_META_ROUTE = '/star-wallpaper/background-meta';
+const MEDIA_MAX_BYTES = 512 * 1024 * 1024;
+
+/**
+ * Where the user's own canvas lives. Inside the home directory, next to the
+ * greeting ledger, so a profile reinstall keeps it and no package copy does.
+ * @returns absolute paths, or null when the home directory is unwritable.
+ */
+function mediaPaths() {
+  try {
+    const dir = join(homedir(), '.dsh', 'star-wallpaper');
+    mkdirSync(dir, { recursive: true });
+    return { dir, file: join(dir, 'background'), meta: join(dir, 'background.json') };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read the stored canvas descriptor, but only while its bytes are still there.
+ * @returns the metadata record, or null.
+ */
+function readMediaMeta() {
+  const paths = mediaPaths();
+  if (!paths) return null;
+  try {
+    const meta = JSON.parse(readFileSync(paths.meta, 'utf8'));
+    if (!meta || typeof meta.mime !== 'string') return null;
+    if (meta.kind !== 'image' && meta.kind !== 'video') return null;
+    if (statSync(paths.file).size <= 0) return null;
+    return meta;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Identify a photo or video from its first bytes. The MIME the client sends is
+ * a hint for the file picker, never the authority.
+ * @param head - the leading bytes of the upload.
+ * @returns { kind, mime } or null when the bytes are none of the formats.
+ */
+function sniffMedia(head) {
+  if (!head || head.length < 12) return null;
+  const ascii = (start, end) => {
+    let text = '';
+    for (let i = start; i < end && i < head.length; i += 1) text += String.fromCharCode(head[i]);
+    return text;
+  };
+  if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) {
+    return { kind: 'image', mime: 'image/jpeg' };
+  }
+  if (head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47) {
+    return { kind: 'image', mime: 'image/png' };
+  }
+  if (head[0] === 0x47 && head[1] === 0x49 && head[2] === 0x46 && head[3] === 0x38) {
+    return { kind: 'image', mime: 'image/gif' };
+  }
+  if (ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') {
+    return { kind: 'image', mime: 'image/webp' };
+  }
+  if (ascii(4, 8) === 'ftyp') {
+    const brand = ascii(8, 12);
+    if (brand === 'avif' || brand === 'avis') return { kind: 'image', mime: 'image/avif' };
+    /* HEIC/HEIF decodes in macOS but not in the desktop shell: refuse it here
+       instead of storing a file the canvas can never paint. */
+    if (brand === 'heic' || brand === 'heix' || brand === 'mif1' || brand === 'msf1') return null;
+    return { kind: 'video', mime: 'video/mp4' };
+  }
+  if (head[0] === 0x1a && head[1] === 0x45 && head[2] === 0xdf && head[3] === 0xa3) {
+    return { kind: 'video', mime: 'video/webm' };
+  }
+  if (ascii(0, 4) === 'OggS') return { kind: 'video', mime: 'video/ogg' };
+  return null;
+}
+
+/**
+ * Serve the stored canvas with byte-range support: a video seeks, and even a
+ * still benefits from a browser that can fetch just the head of the file.
+ * @param request - the incoming request (GET or HEAD).
+ * @param response - the response that owns the bytes.
+ * @param paths - storage paths from {@link mediaPaths}.
+ * @param meta - the descriptor from {@link readMediaMeta}.
+ */
+function streamMedia(request, response, paths, meta) {
+  let size = 0;
+  try {
+    size = statSync(paths.file).size;
+  } catch {
+    size = 0;
+  }
+  if (size <= 0) {
+    response.statusCode = 404;
+    response.end();
+    return;
+  }
+  response.setHeader('Content-Type', meta.mime);
+  response.setHeader('Accept-Ranges', 'bytes');
+  response.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  const range = request.headers.range;
+  if (typeof range === 'string' && range.startsWith('bytes=')) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+    if (match !== null) {
+      let start = match[1] === '' ? size - Number(match[2]) : Number(match[1]);
+      let end = match[1] !== '' && match[2] !== '' ? Number(match[2]) : size - 1;
+      if (!Number.isFinite(start) || start < 0) start = 0;
+      if (!Number.isFinite(end) || end >= size) end = size - 1;
+      if (start > end) {
+        response.statusCode = 416;
+        response.setHeader('Content-Range', 'bytes */' + size);
+        response.end();
+        return;
+      }
+      response.statusCode = 206;
+      response.setHeader('Content-Range', 'bytes ' + start + '-' + end + '/' + size);
+      response.setHeader('Content-Length', String(end - start + 1));
+      if (request.method === 'HEAD') {
+        response.end();
+        return;
+      }
+      const stream = createReadStream(paths.file, { start, end });
+      stream.on('error', () => {
+        try { response.destroy(); } catch {}
+      });
+      stream.pipe(response);
+      return;
+    }
+  }
+  response.statusCode = 200;
+  response.setHeader('Content-Length', String(size));
+  if (request.method === 'HEAD') {
+    response.end();
+    return;
+  }
+  const stream = createReadStream(paths.file);
+  stream.on('error', () => {
+    try { response.destroy(); } catch {}
+  });
+  stream.pipe(response);
+}
+
+/**
+ * The canvas routes: GET/HEAD serve the stored file, POST stores a sniffed and
+ * size-capped photo or video, DELETE brings the packaged nebula back. The bytes
+ * never leave this machine — they only move into ~/.dsh/star-wallpaper/.
+ * @param ctx - Host plugin context carrying the web server service.
+ */
+function registerMediaRoute(ctx) {
+  try {
+    ctx.inject(['webServer'], (webCtx) => {
+      let webServer;
+      try {
+        webServer = typeof webCtx.get === 'function' ? webCtx.get('webServer') : webCtx.webServer;
+      } catch {
+        return;
+      }
+      if (!webServer || typeof webServer.register !== 'function') return;
+      const paths = mediaPaths();
+      if (!paths) return;
+      const sendJson = (response, status, body) => {
+        response.statusCode = status;
+        response.setHeader('Content-Type', 'application/json; charset=utf-8');
+        response.setHeader('Cache-Control', 'no-store');
+        response.end(JSON.stringify(body));
+      };
+      const handleMedia = (request, response) => {
+        const method = request.method;
+        if (method === 'GET' || method === 'HEAD') {
+          const meta = readMediaMeta();
+          if (!meta) {
+            response.statusCode = 404;
+            response.end();
+            return;
+          }
+          streamMedia(request, response, paths, meta);
+          return;
+        }
+        if (method === 'DELETE') {
+          try { unlinkSync(paths.file); } catch {}
+          try { unlinkSync(paths.meta); } catch {}
+          sendJson(response, 200, { ok: true, meta: { has: false } });
+          return;
+        }
+        if (method !== 'POST') {
+          response.statusCode = 405;
+          response.setHeader('Allow', 'GET, HEAD, POST, DELETE');
+          response.end();
+          return;
+        }
+        const temp = paths.file + '.upload';
+        /* A dead upload from an earlier run must not become this one's prefix.
+           On Windows the handle can also outlive the decision to abort, so the
+           discard rides both the immediate call and the stream's close. */
+        try { unlinkSync(temp); } catch {}
+        const out = createWriteStream(temp);
+        /* Every exit from this stream — abort, failure, success — passes
+           through `close`; unlinking here is the one place that always runs
+           after the handle is gone, so nothing 0-byte is left behind. */
+        out.once('close', () => {
+          try { unlinkSync(temp); } catch {}
+        });
+        let received = 0;
+        let head = Buffer.alloc(0);
+        let sniffed = null;
+        let aborted = false;
+        const discardTemp = () => {
+          try { unlinkSync(temp); } catch {}
+        };
+        const fail = (status, error) => {
+          if (aborted) return;
+          aborted = true;
+          try { out.once('close', discardTemp); } catch {}
+          try { out.destroy(); } catch {}
+          discardTemp();
+          try { request.resume(); } catch {}
+          sendJson(response, status, { ok: false, error });
+        };
+        request.on('error', () => fail(400, 'bad-request'));
+        request.on('data', (chunk) => {
+          if (aborted) return;
+          if (!sniffed) {
+            head = Buffer.concat([head, chunk]);
+            if (head.length < 32) return;
+            sniffed = sniffMedia(head);
+            if (!sniffed) {
+              fail(415, 'unsupported');
+              return;
+            }
+            received = head.length;
+            out.write(head);
+            head = null;
+            return;
+          }
+          received += chunk.length;
+          if (received > MEDIA_MAX_BYTES) {
+            fail(413, 'too-large');
+            return;
+          }
+          out.write(chunk);
+        });
+        request.on('end', () => {
+          if (aborted) return;
+          if (!sniffed) {
+            if (head && head.length > 0) {
+              sniffed = sniffMedia(head);
+              if (sniffed) {
+                received = head.length;
+                out.write(head);
+              }
+            }
+            if (!sniffed) {
+              fail(415, 'unsupported');
+              return;
+            }
+          }
+          if (received > MEDIA_MAX_BYTES) {
+            fail(413, 'too-large');
+            return;
+          }
+          let name = '';
+          try {
+            name = decodeURIComponent(String(request.headers['x-sws-name'] || ''));
+          } catch {
+            name = '';
+          }
+          name = name.replace(/[\\/\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+          if (name === '') name = 'background';
+          const meta = {
+            has: true,
+            kind: sniffed.kind,
+            mime: sniffed.mime,
+            name,
+            size: received,
+            version: Date.now(),
+          };
+          out.end(() => {
+            try {
+              renameSync(temp, paths.file);
+              writeFileSync(paths.meta, JSON.stringify(meta));
+            } catch {
+              try { out.once('close', discardTemp); } catch {}
+              discardTemp();
+              sendJson(response, 500, { ok: false, error: 'store-failed' });
+              return;
+            }
+            sendJson(response, 200, { ok: true, meta });
+          });
+        });
+      };
+      const handleMeta = (request, response) => {
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+          response.statusCode = 405;
+          response.setHeader('Allow', 'GET, HEAD');
+          response.end();
+          return;
+        }
+        const meta = readMediaMeta();
+        sendJson(
+          response,
+          200,
+          meta
+            ? { ok: true, meta: { has: true, kind: meta.kind, mime: meta.mime, name: meta.name, size: meta.size, version: meta.version } }
+            : { ok: true, meta: { has: false } },
+        );
+      };
+      try {
+        const disposers = [
+          webServer.register({ kind: 'exact', path: MEDIA_ROUTE, handler: handleMedia }),
+          webServer.register({ kind: 'exact', path: MEDIA_META_ROUTE, handler: handleMeta }),
+        ];
+        webCtx.on('dispose', () => {
+          for (const dispose of disposers) {
+            try { dispose(); } catch {}
+          }
+        });
+      } catch {}
+    });
+  } catch {}
+}
+
 /**
  * Register the boot-splash stylesheet with the Web server's index renderer.
  * @param ctx - Host plugin context carrying the event bus.
@@ -353,17 +675,36 @@ function registerGreetStateRoute(ctx) {
 export function apply(ctx) {
   registerBgmRoute(ctx);
   registerGreetStateRoute(ctx);
-  let style = '';
-  try {
-    style = buildBootStyle();
-  } catch {
-    return;
-  }
-  if (style === '') return;
+  registerMediaRoute(ctx);
+  /* The boot splash follows the canvas too: when the user picked a photo, the
+     first frame of the app is theirs as well. Rebuilt on every index render,
+     so a new picture needs only a reload — never a restart. A video keeps the
+     packaged nebula, because a boot screen cannot play one. */
+  let bootStyle = '';
+  let bootKey = null;
+  const bootStyleFor = () => {
+    let custom = '';
+    try {
+      const meta = readMediaMeta();
+      if (meta !== null && meta.kind === 'image') custom = MEDIA_ROUTE + '?v=' + String(meta.version || '1');
+    } catch {}
+    const key = custom === '' ? 'packaged' : custom;
+    if (key !== bootKey) {
+      bootKey = key;
+      bootStyle = '';
+      try {
+        bootStyle = buildBootStyle(custom);
+      } catch {
+        bootStyle = '';
+      }
+    }
+    return bootStyle;
+  };
   try {
     ctx.on('webserver/index-inject', (table) => {
       try {
-        if (Array.isArray(table)) table.push({ kind: 'style', text: style });
+        const style = bootStyleFor();
+        if (style !== '' && Array.isArray(table)) table.push({ kind: 'style', text: style });
       } catch {}
     });
   } catch {}

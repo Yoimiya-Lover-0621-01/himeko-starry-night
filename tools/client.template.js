@@ -1556,6 +1556,143 @@ body[data-ds-dark-theme] [data-sws-composer] {
   color: var(--dsw-alias-label-primary, #f1f2ff) !important;
 }
 
+
+/* ===== Cosmos canvas: your own photo or video behind the shell ========
+   The navigation tabs and every glass surface still float on the same
+   liquid-glass film; what changes underneath is the sky itself. */
+#sws-cosmos {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: #05060f;
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+#sws-cosmos[data-ready] {
+  opacity: 1;
+}
+body[data-sws-cosmos]::before {
+  opacity: 0;
+}
+#sws-cosmos > img,
+#sws-cosmos > video {
+  position: absolute;
+  inset: -2%;
+  width: 104%;
+  height: 104%;
+  object-fit: cover;
+  object-position: center center;
+  filter: saturate(1.05) brightness(0.99);
+}
+#sws-cosmos > img {
+  animation: sws-cosmos-drift 72s ease-in-out infinite alternate;
+}
+#sws-cosmos::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 100% at 50% 30%, rgba(6, 8, 22, 0.08) 0%, rgba(4, 5, 14, 0.52) 100%),
+    linear-gradient(180deg, rgba(7, 9, 22, 0.34) 0%, rgba(7, 9, 22, 0.20) 44%, rgba(7, 9, 22, 0.46) 100%);
+}
+@keyframes sws-cosmos-drift {
+  from { transform: scale(1.01) translate3d(0, 0, 0); }
+  to { transform: scale(1.09) translate3d(0, -1.4%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #sws-cosmos > img {
+    animation: none !important;
+  }
+}
+
+/* Settings → 背景 */
+.sws-bg-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+.sws-bg-preview {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 116px;
+  height: 66px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(140deg, #1b1f4d, #0b0d24);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.18), 0 6px 16px rgba(0, 0, 0, 0.24);
+}
+.sws-bg-media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sws-bg-default {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #9ba1d9;
+}
+.sws-bg-facts {
+  min-width: 0;
+}
+.sws-bg-name {
+  margin-top: 3px;
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary, #f1f2ff);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sws-bg-note {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary, #9ba1d9);
+}
+.sws-bg-drop {
+  margin-top: 14px;
+  padding: 18px 16px;
+  border: 1px dashed rgba(150, 160, 255, 0.34);
+  border-radius: 12px;
+  background: rgba(20, 23, 60, 0.28);
+  text-align: center;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.sws-bg-drop-hover {
+  border-color: rgba(150, 168, 255, 0.78);
+  background: rgba(58, 84, 255, 0.22);
+}
+.sws-bg-drop-title {
+  font-size: 13px;
+  color: #e6e8ff;
+}
+.sws-bg-drop-note {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary, #9ba1d9);
+}
+.sws-btn-ghost {
+  background: rgba(120, 132, 255, 0.16);
+  box-shadow: inset 0 0 0 0.5px rgba(160, 170, 255, 0.28);
+}
+.sws-btn-ghost:hover:not(:disabled) {
+  background: rgba(120, 132, 255, 0.28);
+}
+.sws-bg-progress {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, #c4c9f2);
+}
+.sws-bg-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #ffb3c0;
+}
+
 `;
 
     function NebulaWallpaper() {
@@ -1569,7 +1706,7 @@ body[data-ds-dark-theme] [data-sws-composer] {
        Settings -> About and window.__SWS_COMPAT__, and degrade the status
        honestly instead of silently painting half a theme. Never throw: a
        theme must not be able to take the host down. */
-    const THEME_VERSION = '1.0.1';
+    const THEME_VERSION = '1.1.0';
     const COMPAT = (() => {
       const state = {
         theme: THEME_VERSION,
@@ -1843,6 +1980,268 @@ body[data-ds-dark-theme] [data-sws-composer] {
         return null;
       }
       return ambientAudio;
+    }
+
+    /* ===== Cosmos canvas: a photo or a video of your own as the sky ====
+       The nebula is where the journey starts, not where it ends. A file
+       chosen in Settings → 背景 is written by the Host half to
+       ~/.dsh/star-wallpaper/background and served back from the same
+       origin, so nothing is uploaded anywhere and no artwork rides the
+       boot bundle. A picture drifts slowly; a video simply breathes. */
+    const COSMOS_ROUTE = '/star-wallpaper/background';
+    const COSMOS_META_ROUTE = '/star-wallpaper/background-meta';
+    let cosmosMeta = { has: false };
+    let cosmosLayer = null;
+    let cosmosMedia = null;
+    let cosmosMediaKey = '';
+    const cosmosListeners = new Set();
+
+    function cosmosSnapshot() {
+      return {
+        has: cosmosMeta.has === true,
+        kind: typeof cosmosMeta.kind === 'string' ? cosmosMeta.kind : '',
+        name: typeof cosmosMeta.name === 'string' ? cosmosMeta.name : '',
+        size: Number.isFinite(cosmosMeta.size) ? cosmosMeta.size : 0,
+        version: Number.isFinite(cosmosMeta.version) ? cosmosMeta.version : 0,
+        mime: typeof cosmosMeta.mime === 'string' ? cosmosMeta.mime : '',
+      };
+    }
+    function cosmosSource(meta) {
+      const version = meta && Number.isFinite(meta.version) ? String(meta.version) : '1';
+      return COSMOS_ROUTE + '?v=' + encodeURIComponent(version);
+    }
+    function subscribeCosmos(listener) {
+      cosmosListeners.add(listener);
+      return () => {
+        cosmosListeners.delete(listener);
+      };
+    }
+    function emitCosmos() {
+      for (const listener of Array.from(cosmosListeners)) {
+        try { listener(); } catch {}
+      }
+    }
+    function formatMediaSize(size) {
+      if (!Number.isFinite(size) || size <= 0) return '';
+      if (size >= 1024 * 1024 * 1024) return (size / (1024 ** 3)).toFixed(2) + ' GB';
+      if (size >= 1024 * 1024) return (size / (1024 ** 2)).toFixed(1) + ' MB';
+      return Math.max(1, Math.round(size / 1024)) + ' KB';
+    }
+    function cosmosReducedMotion() {
+      try {
+        return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      } catch {
+        return false;
+      }
+    }
+    function ensureCosmosLayer() {
+      if (cosmosLayer !== null && cosmosLayer.isConnected) return cosmosLayer;
+      if (!document.body) return null;
+      try {
+        const layer = document.createElement('div');
+        layer.id = 'sws-cosmos';
+        layer.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(layer);
+        cosmosLayer = layer;
+        cosmosMedia = null;
+        cosmosMediaKey = '';
+        return layer;
+      } catch {
+        return null;
+      }
+    }
+    function cleanCosmosMedia() {
+      const media = cosmosMedia;
+      cosmosMedia = null;
+      if (media === null) return;
+      try {
+        if (media.tagName === 'VIDEO') media.pause();
+      } catch {}
+      try {
+        media.removeAttribute('src');
+        media.remove();
+      } catch {}
+    }
+    function mountCosmosMedia() {
+      const layer = ensureCosmosLayer();
+      if (layer === null) return;
+      const meta = cosmosSnapshot();
+      try {
+        if (meta.has) document.body.setAttribute('data-sws-cosmos', meta.kind);
+        else document.body.removeAttribute('data-sws-cosmos');
+      } catch {}
+      if (!meta.has) {
+        cleanCosmosMedia();
+        cosmosMediaKey = '';
+        try {
+          layer.removeAttribute('data-ready');
+          layer.removeAttribute('data-kind');
+        } catch {}
+        return;
+      }
+      const key = meta.kind + ':' + String(meta.version);
+      try { layer.setAttribute('data-kind', meta.kind); } catch {}
+      if (cosmosMediaKey === key && cosmosMedia !== null) return;
+      try { layer.removeAttribute('data-ready'); } catch {}
+      cleanCosmosMedia();
+      cosmosMediaKey = key;
+      const source = cosmosSource(meta);
+      const reduced = cosmosReducedMotion();
+      let media;
+      try {
+        if (meta.kind === 'video') {
+          media = document.createElement('video');
+          media.muted = true;
+          media.defaultMuted = true;
+          media.loop = true;
+          media.playsInline = true;
+          media.preload = 'auto';
+          media.autoplay = !reduced;
+          media.setAttribute('muted', '');
+          media.setAttribute('loop', '');
+          media.setAttribute('playsinline', '');
+          media.setAttribute('disablepictureinpicture', '');
+          media.addEventListener('loadeddata', () => {
+            try { layer.setAttribute('data-ready', ''); } catch {}
+          });
+          media.addEventListener('error', () => {
+            try { layer.removeAttribute('data-ready'); } catch {}
+          });
+        } else {
+          media = document.createElement('img');
+          media.alt = '';
+          media.setAttribute('aria-hidden', 'true');
+          media.decoding = 'async';
+          media.addEventListener('load', () => {
+            try { layer.setAttribute('data-ready', ''); } catch {}
+          });
+          media.addEventListener('error', () => {
+            try { layer.removeAttribute('data-ready'); } catch {}
+          });
+        }
+        media.src = source;
+        layer.appendChild(media);
+        cosmosMedia = media;
+        if (meta.kind === 'video' && !reduced) {
+          const playing = media.play();
+          if (playing && typeof playing.catch === 'function') playing.catch(() => {});
+        }
+        if (meta.kind !== 'video' && media.complete && media.naturalWidth > 0) {
+          layer.setAttribute('data-ready', '');
+        }
+      } catch {
+        cleanCosmosMedia();
+      }
+    }
+    async function loadCosmosMeta() {
+      try {
+        const response = await fetch(COSMOS_META_ROUTE, { cache: 'no-store' });
+        if (!response.ok) return;
+        const parsed = await response.json();
+        if (!parsed || typeof parsed !== 'object' || !parsed.meta || typeof parsed.meta !== 'object') return;
+        cosmosMeta = parsed.meta;
+        mountCosmosMedia();
+        emitCosmos();
+      } catch {}
+    }
+    function uploadCosmosFile(file, onProgress) {
+      return new Promise((resolve) => {
+        let settled = false;
+        const finish = (result) => {
+          if (settled) return;
+          settled = true;
+          resolve(result);
+        };
+        let request;
+        try {
+          request = new XMLHttpRequest();
+        } catch {
+          finish({ ok: false, error: 'network' });
+          return;
+        }
+        try {
+          request.open('POST', COSMOS_ROUTE, true);
+          request.setRequestHeader('Content-Type', 'application/octet-stream');
+          request.setRequestHeader('X-SWS-Name', encodeURIComponent(String(file.name || '')));
+        } catch {
+          finish({ ok: false, error: 'network' });
+          return;
+        }
+        request.upload.onprogress = (event) => {
+          try {
+            if (event.lengthComputable && typeof onProgress === 'function') onProgress(event.loaded / event.total);
+          } catch {}
+        };
+        request.onload = () => {
+          let body = null;
+          try { body = JSON.parse(request.responseText || '{}'); } catch {}
+          if (request.status >= 200 && request.status < 300 && body && body.ok === true) {
+            if (body.meta && typeof body.meta === 'object') {
+              cosmosMeta = body.meta;
+              mountCosmosMedia();
+              emitCosmos();
+            }
+            finish({ ok: true });
+            return;
+          }
+          finish({ ok: false, error: body && typeof body.error === 'string' ? body.error : 'store-failed' });
+        };
+        request.onerror = () => finish({ ok: false, error: 'network' });
+        request.onabort = () => finish({ ok: false, error: 'network' });
+        try {
+          request.send(file);
+        } catch {
+          finish({ ok: false, error: 'network' });
+        }
+      });
+    }
+    async function clearCosmos() {
+      try {
+        const response = await fetch(COSMOS_ROUTE, { method: 'DELETE' });
+        let body = null;
+        try { body = await response.json(); } catch {}
+        cosmosMeta = { has: false };
+        mountCosmosMedia();
+        emitCosmos();
+        return { ok: response.ok && (!body || body.ok !== false) };
+      } catch {
+        return { ok: false, error: 'network' };
+      }
+    }
+    function installCosmos() {
+      let disposed = false;
+      const start = () => {
+        if (disposed) return;
+        ensureCosmosLayer();
+        mountCosmosMedia();
+        loadCosmosMeta();
+      };
+      if (document.body) start();
+      else {
+        try { document.addEventListener('DOMContentLoaded', start, { once: true }); } catch {}
+      }
+      const onVisibility = () => {
+        if (disposed) return;
+        const media = cosmosMedia;
+        if (media === null || media.tagName !== 'VIDEO') return;
+        try {
+          if (document.hidden) media.pause();
+          else {
+            const playing = media.play();
+            if (playing && typeof playing.catch === 'function') playing.catch(() => {});
+          }
+        } catch {}
+      };
+      try { document.addEventListener('visibilitychange', onVisibility); } catch {}
+      return () => {
+        disposed = true;
+        try { document.removeEventListener('visibilitychange', onVisibility); } catch {}
+        cleanCosmosMedia();
+        cosmosMediaKey = '';
+        try { if (cosmosLayer) cosmosLayer.remove(); } catch {}
+        cosmosLayer = null;
+        try { document.body.removeAttribute('data-sws-cosmos'); } catch {}
+      };
     }
 
     function normalizeGreetText(value) {
@@ -2471,6 +2870,178 @@ body[data-ds-dark-theme] [data-sws-composer] {
       return tr('检测中…', 'Checking…');
     }
 
+    function BackgroundSection() {
+      const [snapshot, setSnapshot] = React.useState(cosmosSnapshot);
+      const [progress, setProgress] = React.useState(-1);
+      const [error, setError] = React.useState('');
+      const [hover, setHover] = React.useState(false);
+      const imageInput = React.useRef(null);
+      const videoInput = React.useRef(null);
+      React.useEffect(() => subscribeCosmos(() => setSnapshot(cosmosSnapshot())), []);
+      React.useEffect(() => {
+        loadCosmosMeta();
+      }, []);
+      const reason = (code) => {
+        if (code === 'too-large') {
+          return tr('这个文件太大了，换个小一些的（上限 512 MB）。', 'That file is too large — the limit is 512 MB.');
+        }
+        if (code === 'unsupported') {
+          return tr(
+            '这个格式读不了，试试 JPG / PNG / WebP / GIF / AVIF，或 MP4 / WebM。',
+            'Unsupported format — try JPG / PNG / WebP / GIF / AVIF, MP4 or WebM.',
+          );
+        }
+        if (code === 'network') {
+          return tr(
+            '本机服务没有应答，请确认在桌面端或 dsh web 里运行。',
+            'The local service did not answer — run the desktop app or dsh web.',
+          );
+        }
+        return tr('没能设置背景，再试一次看看。', 'Could not set the background — try again.');
+      };
+      const busy = progress >= 0;
+      const accept = async (file) => {
+        if (!file) return;
+        const type = String(file.type || '');
+        if (type !== '' && !/^(image|video)\//.test(type)) {
+          setError(reason('unsupported'));
+          return;
+        }
+        setProgress(0);
+        setError('');
+        const result = await uploadCosmosFile(file, (fraction) => {
+          setProgress(Math.max(1, Math.min(100, Math.round(fraction * 100))));
+        });
+        setProgress(-1);
+        if (!result.ok) setError(reason(result.error));
+      };
+      const fromInput = (event) => {
+        const input = event.currentTarget;
+        const file = input.files && input.files[0];
+        try { input.value = ''; } catch {}
+        accept(file);
+      };
+      const preview = snapshot.has
+        ? snapshot.kind === 'video'
+          ? h('video', {
+              className: 'sws-bg-media',
+              src: cosmosSource(snapshot),
+              muted: true,
+              playsInline: true,
+              preload: 'metadata',
+            })
+          : h('img', { className: 'sws-bg-media', src: cosmosSource(snapshot), alt: '' })
+        : h('div', { className: 'sws-bg-default' }, tr('星云', 'Nebula'));
+      const current = snapshot.has
+        ? (snapshot.kind === 'video' ? tr('视频 · ', 'Video · ') : tr('照片 · ', 'Photo · ')) + snapshot.name
+        : tr('默认星云（莫奈取色）', 'Default nebula (Monet palette)');
+      return h(
+        'div',
+        { className: 'sws-page' },
+        h(
+          'div',
+          { className: 'sws-card' },
+          h('div', { className: 'sws-title' }, tr('星辰画布', 'Cosmos canvas')),
+          h(
+            'div',
+            { className: 'sws-desc' },
+            tr(
+              '星空是启程的地方，不是尽头。放一张照片，或一段会呼吸的影像，让窗外换成你想去的宇宙。',
+              'The starry sky is where the journey starts, not where it ends. Set a photo — or a living video — and let the window open onto the cosmos you want to reach.',
+            ),
+          ),
+          h(
+            'div',
+            { className: 'sws-bg-preview-row' },
+            h('div', { className: 'sws-bg-preview' }, preview),
+            h(
+              'div',
+              { className: 'sws-bg-facts' },
+              h('div', { className: 'sws-row-label' }, tr('当前背景', 'Current background')),
+              h('div', { className: 'sws-bg-name', title: current }, current),
+              h(
+                'div',
+                { className: 'sws-bg-note' },
+                snapshot.has
+                  ? formatMediaSize(snapshot.size) + ' · ' + tr('只保存在本机', 'stored on this machine only')
+                  : tr('姬子的星云 · 莫奈取色', "Himeko's nebula · Monet palette"),
+              ),
+            ),
+          ),
+          h(
+            'div',
+            {
+              className: 'sws-bg-drop' + (hover ? ' sws-bg-drop-hover' : ''),
+              onDragOver: (event) => {
+                event.preventDefault();
+                if (!busy) setHover(true);
+              },
+              onDragLeave: () => setHover(false),
+              onDrop: (event) => {
+                event.preventDefault();
+                setHover(false);
+                if (busy) return;
+                const files = event.dataTransfer && event.dataTransfer.files;
+                if (files && files.length > 0) accept(files[0]);
+              },
+            },
+            h('div', { className: 'sws-bg-drop-title' }, tr('把照片或视频拖到这里', 'Drop a photo or video here')),
+            h(
+              'div',
+              { className: 'sws-bg-drop-note' },
+              tr(
+                'JPG / PNG / WebP / GIF / AVIF · MP4 / WebM，最大 512 MB',
+                'JPG / PNG / WebP / GIF / AVIF · MP4 / WebM, up to 512 MB',
+              ),
+            ),
+          ),
+          h(
+            'div',
+            { className: 'sws-actions' },
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'sws-btn',
+                disabled: busy,
+                onClick: () => imageInput.current && imageInput.current.click(),
+              },
+              tr('选择照片…', 'Choose a photo…'),
+            ),
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'sws-btn sws-btn-ghost',
+                disabled: busy,
+                onClick: () => videoInput.current && videoInput.current.click(),
+              },
+              tr('选择视频…', 'Choose a video…'),
+            ),
+            snapshot.has
+              ? h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'sws-btn sws-btn-ghost',
+                    disabled: busy,
+                    onClick: () => {
+                      clearCosmos();
+                    },
+                  },
+                  tr('恢复星云', 'Back to the nebula'),
+                )
+              : null,
+          ),
+          h('input', { ref: imageInput, type: 'file', accept: 'image/*', style: { display: 'none' }, onChange: fromInput }),
+          h('input', { ref: videoInput, type: 'file', accept: 'video/*', style: { display: 'none' }, onChange: fromInput }),
+          busy
+            ? h('div', { className: 'sws-bg-progress' }, tr('正在写入本机… ', 'Saving on this machine… ') + progress + '%')
+            : null,
+          error !== '' ? h('div', { className: 'sws-bg-error' }, error) : null,
+        ),
+      );
+    }
     function AboutSection() {
       const release = readRelease();
       const [busy, setBusy] = React.useState(false);
@@ -2520,7 +3091,15 @@ body[data-ds-dark-theme] [data-sws-composer] {
                 ' · 可选 ' + COMPAT.state.optionalMatched + ' / ' + COMPAT.state.optional +
                 (COMPAT.state.slotsTotal ? ' · 扩展 ' + COMPAT.state.slotsOk + ' / ' + COMPAT.state.slotsTotal : ''),
             ),
-            row(tr('壁纸', 'Wallpaper'), tr('星云 · 莫奈取色', 'Nebula · Monet palette')),
+            (() => {
+              const canvas = cosmosSnapshot();
+              return row(
+                tr('壁纸', 'Wallpaper'),
+                canvas.has
+                  ? tr('自定义 · ', 'Custom · ') + (canvas.kind === 'video' ? tr('视频', 'Video') : tr('照片', 'Photo'))
+                  : tr('星云 · 莫奈取色', 'Nebula · Monet palette'),
+              );
+            })(),
           ].filter(Boolean),
         ),
         h(
@@ -2599,6 +3178,11 @@ body[data-ds-dark-theme] [data-sws-composer] {
         let stopTagger = null;
         try { stopTagger = installTagger(); } catch {}
         ctx.on('dispose', () => { try { if (stopTagger) stopTagger(); } catch {} });
+        /* The cosmos canvas: the user's own photo or video, mounted behind the
+           shell and kept in sync with the Host-side canvas routes. */
+        let stopCosmos = null;
+        try { stopCosmos = installCosmos(); } catch {}
+        ctx.on('dispose', () => { try { if (stopCosmos) stopCosmos(); } catch {} });
         // Title-bar menu glass, caption overlay, and the self-drawn menus.
         const ensureMenuBar = () => {
           const host = document.querySelector('[data-windows-menu]');
@@ -2638,6 +3222,7 @@ body[data-ds-dark-theme] [data-sws-composer] {
             } catch {}
           }
         };
+        registerSlot('settings.section', { id: 'star-background', order: 20, label: () => tr('背景', 'Background') }, BackgroundSection);
         registerSlot('settings.section', { id: 'star-about', order: 21, label: () => tr('关于', 'About') }, AboutSection);
         registerSlot('settings.section', { id: 'star-exit', order: 22, label: () => tr('退出', 'Exit') }, ExitSection);
         registerSlot('shell.overlay', { id: 'star-wallpaper', order: -100 }, NebulaWallpaper);

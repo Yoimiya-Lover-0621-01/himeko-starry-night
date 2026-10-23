@@ -1,9 +1,5 @@
 # 姬子的星月夜（Himeko's Starry Night）
 
-[![DSH Market](https://raw.githubusercontent.com/2BingLing/dsh-market/master/assets/readme/badge-listed-zh.svg)](https://dsh.market/)
-
-仅在0.2.1-rc2测试通过！！！其他版本慎重！！！
-
 DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃。
 
 ![姬子的星月夜：星云壁纸与液态玻璃界面](preview.png)
@@ -23,6 +19,10 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
   编辑菜单的撤销 / 重做 / 剪切 / 复制 / 粘贴 / 删除 / 全选均可用，不再出现系统原生灰菜单。
 - 设置里新增「关于」「退出」两栏（排在 Agent 预设下方）：「关于」展示版本、主题与壁纸信息，
   并提供检查更新；「退出」是真正退出应用的入口（会关闭整个 DeepSeek Harness）。
+- 设置里新增「背景」栏：星空是启程的地方，不是尽头。把本机的一张照片或一段视频铺成整扇窗的宇宙——
+  照片缓慢漂移（Ken Burns），视频静音循环；底图之上仍是同一层深蓝玻璃蒙版，面板可读性不变。
+  文件只写在本机（`~/.dsh/star-wallpaper/`），不走网络、不进安装包；「恢复星云」一键回到姬子的星云。
+  设置壁纸后，启动屏的底图也会跟着换成这张照片。
 - 启动屏：宿主端通过 `webserver/index-inject` 注入一层 `[data-dsh-boot]` 作用域的样式，
   启动页不再是纯黑 HARNESS：星云壁纸 + 液态玻璃胶囊 + 官方 deepseek HARNESS 标志 + 鲸鱼尾巴
   加载动画 + 「正在点亮星月夜…」+ 底部主题落款。`dsh web` 首帧即生效；桌面端在下一次启动时
@@ -61,6 +61,8 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
   打开 Web UI 时没有这两个按钮，插件不会注入任何额外菜单。
 - 启动屏样式只在启动页存在期间生效；桌面端本次运行期间不会出现（boot 注入在宿主启动时采集），
   重启一次 DSH 桌面端后生效。
+- 「背景」只存在本机：文件写入 `~/.dsh/star-wallpaper/`，不上传、不进入插件包，卸载插件也不会自动删除；
+  想彻底清掉它，删掉该目录即可。
 
 ## 兼容性
 
@@ -115,7 +117,7 @@ dsh plugin add "D:\path\to\dsh-star-wallpaper"
 ## 目录
 
 - `client.js`：构建产物（勿手改）
-- `index.js`：宿主半边，只负责往启动页注入样式；启动不依赖它也能正常进入应用
+- `index.js`：宿主半边，负责往启动页注入样式，并提供「背景」需要的本机存图路由；启动不依赖它也能正常进入应用
 - `tools/client.template.js`：样式与逻辑源文件
 - `tools/build-client.mjs`：构建脚本（把壁纸与鲸鱼尾巴内联成 base64）
 - `tools/selectors-report.mjs`：类名选择器清单（适配新 DSH 版本时比对用）
