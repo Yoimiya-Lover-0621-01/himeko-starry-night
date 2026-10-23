@@ -46,16 +46,16 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
 
 ## 界面截图
 
-下面几张是浏览器版（`dsh web`）实拍，未做后期；桌面端的窗口标题栏按钮与启动屏略有不同，
-其余材质一致。
+下面几张是浏览器版（`dsh web`）实拍，未做后期——只隐去了侧栏里个人的会话条目与账号名；桌面端的
+窗口标题栏按钮与启动屏略有不同，其余材质一致。
 
 | 设置 · 关于 | 插件页 |
 | --- | --- |
 | ![设置里的「关于」栏：主题版本、壁纸与检查更新](preview-settings.png) | ![插件页：已安装的「姬子的星月夜」与实验性插件开关](preview-plugins.png) |
 
-| 自定义背景 · 照片 | 设置 · 背景（星辰画布） |
-| --- | --- |
-| ![把一张照片铺成整扇窗的宇宙：UI 色相跟着照片走](preview-background.jpg) | ![设置里的「背景」栏：预览、拖拽区与「恢复星云」](preview-background-settings.jpg) |
+把「背景」换成一张照片之后（同一套玻璃材质，色相跟着照片走）：
+
+![把一张照片铺成整扇窗的宇宙：UI 色相跟着照片走](preview-background.jpg)
 
 ## 已知限制
 
@@ -106,7 +106,7 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
   如果要二次分发或商用，请自行替换为拥有授权的图片。
 - **deepseek HARNESS 标志**（`assets/brand-lockup.svg`）与**鲸鱼尾巴加载动画**（`assets/whale-tail.png`）：
   取自 DeepSeek Harness 官方前端资源，版权归 DeepSeek 所有，这里只用于本主题的界面装饰。
-- **README 例图里的自定义背景**（`preview-background.jpg`、`preview-background-settings.jpg`）：
+- **README 例图里的自定义背景**（`preview-background.jpg`）：
   取自游戏《原神》的官方美术，版权归米哈游（miHoYo）所有，仅用于演示「自定义背景」效果。
 - 其余 CSS / JS 代码与 `icon.svg` 为本项目原创，使用 MIT 许可证。
 
@@ -134,6 +134,6 @@ dsh plugin add "D:\path\to\dsh-star-wallpaper"
 - `assets/brand-lockup.svg`：从官方品牌组件提取的 deepseek HARNESS 标志
 - `assets/whale-tail.png`：官方 28×28 鲸鱼尾巴 APNG（从 ui-chat 运行时样式提取）
 - `assets/whale-tail-still.svg`：同一只尾巴的静态 SVG（reduced-motion 回退）
-- `preview.png` / `preview-settings.png` / `preview-plugins.png` / `preview-background.jpg` /
-  `preview-background-settings.jpg`：README 里的界面截图（浏览器版）
+- `preview.png` / `preview-settings.png` / `preview-plugins.png` / `preview-background.jpg`：
+  README 里的界面截图（浏览器版，侧栏个人会话已隐去）
 - `cordis.patch.yml`：把本插件挂进 bundle
