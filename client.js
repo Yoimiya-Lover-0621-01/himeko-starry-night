@@ -1696,7 +1696,7 @@ body[data-sws-cosmos]::before {
 `;
 
     function NebulaWallpaper() {
-      return h('style', { 'data-dsh-plugin': 'star-wallpaper' }, CSS);
+      return h('style', { 'data-dsh-plugin': 'star-wallpaper' }, THEME_CSS);
     }
 
     /* ===== Compatibility guard =========================================
@@ -1996,6 +1996,151 @@ body[data-sws-cosmos]::before {
     let cosmosMediaKey = '';
     const cosmosListeners = new Set();
 
+    /* ===== Palette: the theme colour follows the canvas ================
+       The skin writes its colours as literal rgba() triples. They are
+       collected once and handed out as `--sws-p-<r>-<g>-<b>` tokens; when the
+       user's own picture is on the canvas the tokens' hue is rotated by the
+       picture's dominant hue — lightness and saturation stay untouched, so
+       contrast never depends on the photo. Warm/green status colours and
+       near-neutral greys keep their literal values. */
+    const PALETTE_HUE_MIN = 185;
+    const PALETTE_HUE_MAX = 290;
+    const PALETTE_MIN_SATURATION = 0.12;
+    const PALETTE_MIN_SHIFT = 12;
+    const THEME_BASE_HUE = 232;
+    const paletteColors = new Map();
+
+    function rgbToHsl(r, g, b) {
+      const red = r / 255;
+      const green = g / 255;
+      const blue = b / 255;
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      const lightness = (max + min) / 2;
+      const delta = max - min;
+      if (delta === 0) return [0, 0, lightness];
+      const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+      let hue;
+      if (max === red) hue = ((green - blue) / delta + (green < blue ? 6 : 0)) / 6;
+      else if (max === green) hue = ((blue - red) / delta + 2) / 6;
+      else hue = ((red - green) / delta + 4) / 6;
+      return [hue * 360, saturation, lightness];
+    }
+    function hueToRgb(x, y, h) {
+      let value = h;
+      if (value < 0) value += 1;
+      if (value > 1) value -= 1;
+      if (value < 1 / 6) return x + (y - x) * 6 * value;
+      if (value < 1 / 2) return y;
+      if (value < 2 / 3) return x + (y - x) * (2 / 3 - value) * 6;
+      return x;
+    }
+    function hslToRgb(h, s, l) {
+      const hue = (((h % 360) + 360) % 360) / 360;
+      if (s === 0) {
+        const value = Math.round(l * 255);
+        return [value, value, value];
+      }
+      const y = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const x = 2 * l - y;
+      return [
+        Math.round(hueToRgb(x, y, hue + 1 / 3) * 255),
+        Math.round(hueToRgb(x, y, hue) * 255),
+        Math.round(hueToRgb(x, y, hue - 1 / 3) * 255),
+      ];
+    }
+    function shiftHue(rgb, shift) {
+      const hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+      return hslToRgb(((hsl[0] + shift) % 360 + 360) % 360, hsl[1], hsl[2]);
+    }
+    function tokenizePalette(css) {
+      const defaults = [];
+      const tokenized = css.replace(/rgba\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3}),\s*([0-9]*\.?[0-9]+)\)/g, (match, red, green, blue, alpha) => {
+        const r = Number(red);
+        const g = Number(green);
+        const b = Number(blue);
+        if (r > 255 || g > 255 || b > 255) return match;
+        const hsl = rgbToHsl(r, g, b);
+        if (hsl[1] < PALETTE_MIN_SATURATION || hsl[0] < PALETTE_HUE_MIN || hsl[0] > PALETTE_HUE_MAX) return match;
+        const name = '--sws-p-' + r + '-' + g + '-' + b;
+        if (!paletteColors.has(name)) {
+          paletteColors.set(name, [r, g, b]);
+          defaults.push(name + ': ' + r + ', ' + g + ', ' + b + ';');
+        }
+        return 'rgba(var(' + name + '), ' + alpha + ')';
+      });
+      return tokenized + '\nhtml {\n  ' + defaults.join('\n  ') + '\n}\n';
+    }
+    const THEME_CSS = tokenizePalette(CSS);
+
+    let paletteHue = null;
+    function applyCosmosPalette(targetHue) {
+      try {
+        const root = document.documentElement;
+        if (root === null) return;
+        let shift = 0;
+        if (Number.isFinite(targetHue) && cosmosMeta.has === true) {
+          shift = ((((targetHue - THEME_BASE_HUE) % 360) + 540) % 360) - 180;
+          if (Math.abs(shift) < PALETTE_MIN_SHIFT) shift = 0;
+        }
+        if (shift === 0) {
+          for (const name of paletteColors.keys()) root.style.removeProperty(name);
+          paletteHue = null;
+          return;
+        }
+        for (const [name, rgb] of paletteColors) {
+          const shifted = shiftHue(rgb, shift);
+          root.style.setProperty(name, shifted[0] + ', ' + shifted[1] + ', ' + shifted[2]);
+        }
+        paletteHue = targetHue;
+      } catch {}
+    }
+    function sampleMediaHue(media) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 48;
+        canvas.height = 48;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        if (!context) return null;
+        context.drawImage(media, 0, 0, 48, 48);
+        const pixels = context.getImageData(0, 0, 48, 48).data;
+        const bins = new Array(36).fill(0);
+        let total = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index + 3] < 200) continue;
+          const hsl = rgbToHsl(pixels[index], pixels[index + 1], pixels[index + 2]);
+          if (hsl[1] < 0.16 || hsl[2] < 0.10 || hsl[2] > 0.90) continue;
+          const mid = 1 - Math.abs(hsl[2] - 0.5) * 2;
+          const weight = hsl[1] * (0.35 + 0.65 * mid);
+          const bin = Math.min(35, Math.floor(hsl[0] / 10));
+          bins[bin] += weight;
+          total += weight;
+        }
+        if (total < 24) return null;
+        let best = 0;
+        for (let index = 1; index < 36; index += 1) if (bins[index] > bins[best]) best = index;
+        let x = 0;
+        let y = 0;
+        for (let offset = -1; offset <= 1; offset += 1) {
+          const bin = (best + offset + 36) % 36;
+          if (bins[bin] <= 0) continue;
+          const radians = (((bin + 0.5) * 10) * Math.PI) / 180;
+          x += Math.cos(radians) * bins[bin];
+          y += Math.sin(radians) * bins[bin];
+        }
+        if (x === 0 && y === 0) return null;
+        return (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+      } catch {
+        return null;
+      }
+    }
+    function sampleCosmosHue(media) {
+      if (media !== cosmosMedia) return;
+      const hue = sampleMediaHue(media);
+      if (hue === null) return;
+      applyCosmosPalette(hue);
+    }
+
     function cosmosSnapshot() {
       return {
         has: cosmosMeta.has === true,
@@ -2073,6 +2218,7 @@ body[data-sws-cosmos]::before {
       if (!meta.has) {
         cleanCosmosMedia();
         cosmosMediaKey = '';
+        applyCosmosPalette(null);
         try {
           layer.removeAttribute('data-ready');
           layer.removeAttribute('data-kind');
@@ -2103,9 +2249,12 @@ body[data-sws-cosmos]::before {
           media.setAttribute('disablepictureinpicture', '');
           media.addEventListener('loadeddata', () => {
             try { layer.setAttribute('data-ready', ''); } catch {}
+            sampleCosmosHue(media);
+            setTimeout(() => sampleCosmosHue(media), 1200);
           });
           media.addEventListener('error', () => {
             try { layer.removeAttribute('data-ready'); } catch {}
+            applyCosmosPalette(null);
           });
         } else {
           media = document.createElement('img');
@@ -2114,9 +2263,11 @@ body[data-sws-cosmos]::before {
           media.decoding = 'async';
           media.addEventListener('load', () => {
             try { layer.setAttribute('data-ready', ''); } catch {}
+            sampleCosmosHue(media);
           });
           media.addEventListener('error', () => {
             try { layer.removeAttribute('data-ready'); } catch {}
+            applyCosmosPalette(null);
           });
         }
         media.src = source;
@@ -2238,6 +2389,7 @@ body[data-sws-cosmos]::before {
         try { document.removeEventListener('visibilitychange', onVisibility); } catch {}
         cleanCosmosMedia();
         cosmosMediaKey = '';
+        applyCosmosPalette(null);
         try { if (cosmosLayer) cosmosLayer.remove(); } catch {}
         cosmosLayer = null;
         try { document.body.removeAttribute('data-sws-cosmos'); } catch {}
