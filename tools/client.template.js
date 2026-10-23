@@ -684,6 +684,43 @@ body[data-ds-dark-theme] {
   box-shadow: none !important;
 }
 
+/* Schedule card in the transcript (ui-schedule ScheduleCreateCard, "QSKnSa_"
+   classes): the shipped card paints its own opaque neutral fill through
+   --card-fill / --card-hover instead of a theme token, so a schedule_create
+   result sat on the artwork as a flat grey box while every other in-chat card
+   was glass. Re-point both variables at the deep-navy frosted material so the
+   resting fill, the click-anywhere overlay's hover and the transition all
+   inherit it, then add the shared sheen. */
+[class~="QSKnSa_card"] {
+  --card-fill: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0) 30%,
+      rgba(255, 255, 255, 0.02) 100%
+    ),
+    rgba(45, 50, 100, 0.52) !important;
+  --card-hover: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0.03) 32%,
+      rgba(255, 255, 255, 0.05) 100%
+    ),
+    rgba(56, 62, 120, 0.62) !important;
+  border-color: rgba(150, 170, 255, 0.18) !important;
+  -webkit-backdrop-filter: blur(64px) saturate(170%);
+  backdrop-filter: blur(64px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.22) !important;
+}
+/* Clock tile keeps the Monet periwinkle tint instead of the stock neutral one. */
+[class~="QSKnSa_leading"] {
+  border-color: rgba(150, 170, 255, 0.22) !important;
+  background: rgba(96, 118, 255, 0.16) !important;
+  color: rgba(214, 221, 255, 0.95) !important;
+}
+
 /* Restore the sidebar's base glass (lost during earlier CSS surgery):
    new-session button + active nav rows. */
 [class~="_2H3hWW_newSession"] {
