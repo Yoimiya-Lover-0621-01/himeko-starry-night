@@ -1,5 +1,7 @@
 # 姬子的星月夜（Himeko's Starry Night）
 
+[![DSH Market](https://raw.githubusercontent.com/2BingLing/dsh-market/master/assets/readme/badge-listed-zh.svg)](https://dsh.market/)
+
 仅在0.2.1-rc2测试通过！！！其他版本慎重！！！
 
 DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃。
