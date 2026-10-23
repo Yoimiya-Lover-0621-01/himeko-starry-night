@@ -15,8 +15,10 @@
  * The style is scoped to `[data-dsh-boot]`, the boot screen's own root, so it
  * disappears the moment the app renders and cannot leak into the UI.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
 /**
  * Read one packaged asset as a data URI.
@@ -206,40 +208,139 @@ function registerBgmRoute(ctx) {
   } catch {
     return;
   }
-  let webServer;
   try {
-    webServer = typeof ctx.get === 'function' ? ctx.get('webServer') : ctx.webServer;
+    ctx.inject(['webServer'], (webCtx) => {
+      let webServer;
+      try {
+        webServer = typeof webCtx.get === 'function' ? webCtx.get('webServer') : webCtx.webServer;
+      } catch {
+        return;
+      }
+      if (!webServer || typeof webServer.register !== 'function') return;
+      try {
+        const dispose = webServer.register({
+          kind: 'exact',
+          path: AMBIENT_ROUTE,
+          handler(request, response) {
+            try {
+              if (request.method !== 'GET' && request.method !== 'HEAD') {
+                response.statusCode = 405;
+                response.setHeader('Allow', 'GET, HEAD');
+                response.end();
+                return;
+              }
+              response.statusCode = 200;
+              response.setHeader('Content-Type', 'audio/mpeg');
+              response.setHeader('Content-Length', String(bytes.length));
+              response.setHeader('Cache-Control', 'public, max-age=86400');
+              if (request.method === 'HEAD') {
+                response.end();
+                return;
+              }
+              response.end(bytes);
+            } catch {}
+          },
+        });
+        webCtx.on('dispose', () => {
+          try {
+            dispose();
+          } catch {}
+        });
+      } catch {}
+    });
+  } catch {}
+}
+
+const GREET_STATE_ROUTE = '/star-wallpaper/greet-state';
+
+/**
+ * Persist which greeting groups already fired, so a name blesses exactly once
+ * across restarts (the Client can only keep localStorage, which the desktop
+ * shell's own scheme may scope per run).
+ *
+ * The payload is a small array of group indexes — never a name, never a digest.
+ * Registration is best-effort like the track route: without a web server the
+ * Client keeps its own local copy.
+ * @param ctx - Host plugin context carrying the web server service.
+ */
+function registerGreetStateRoute(ctx) {
+  let file;
+  try {
+    const dir = join(homedir(), '.dsh', 'star-wallpaper');
+    mkdirSync(dir, { recursive: true });
+    file = join(dir, 'greet-state.json');
   } catch {
     return;
   }
-  if (!webServer || typeof webServer.register !== 'function') return;
+  const readState = () => {
+    try {
+      const parsed = JSON.parse(readFileSync(file, 'utf8'));
+      return Array.isArray(parsed) ? parsed.filter((value) => Number.isInteger(value)) : [];
+    } catch {
+      return [];
+    }
+  };
+  let queue = Promise.resolve();
   try {
-    const dispose = webServer.register({
-      kind: 'exact',
-      path: AMBIENT_ROUTE,
-      handler(request, response) {
-        try {
-          if (request.method !== 'GET' && request.method !== 'HEAD') {
-            response.statusCode = 405;
-            response.setHeader('Allow', 'GET, HEAD');
-            response.end();
-            return;
-          }
-          response.statusCode = 200;
-          response.setHeader('Content-Type', 'audio/mpeg');
-          response.setHeader('Content-Length', String(bytes.length));
-          response.setHeader('Cache-Control', 'public, max-age=86400');
-          if (request.method === 'HEAD') {
-            response.end();
-            return;
-          }
-          response.end(bytes);
-        } catch {}
-      },
-    });
-    ctx.on('dispose', () => {
+    ctx.inject(['webServer'], (webCtx) => {
+      let webServer;
       try {
-        dispose();
+        webServer = typeof webCtx.get === 'function' ? webCtx.get('webServer') : webCtx.webServer;
+      } catch {
+        return;
+      }
+      if (!webServer || typeof webServer.register !== 'function') return;
+      try {
+        const dispose = webServer.register({
+          kind: 'exact',
+          path: GREET_STATE_ROUTE,
+          handler(request, response) {
+            const send = (status, body) => {
+              response.statusCode = status;
+              response.setHeader('Content-Type', 'application/json; charset=utf-8');
+              response.setHeader('Cache-Control', 'no-store');
+              response.end(JSON.stringify(body));
+            };
+            try {
+              if (request.method === 'GET' || request.method === 'HEAD') {
+                send(200, readState());
+                return;
+              }
+              if (request.method !== 'POST') {
+                response.statusCode = 405;
+                response.setHeader('Allow', 'GET, HEAD, POST');
+                response.end();
+                return;
+              }
+              let raw = '';
+              request.on('data', (chunk) => {
+                if (raw.length < 4096) raw += chunk;
+              });
+              request.on('end', () => {
+                let list = [];
+                try {
+                  const parsed = JSON.parse(raw);
+                  list = Array.isArray(parsed) ? parsed.filter((value) => Number.isInteger(value)).slice(0, 64) : [];
+                } catch {
+                  list = [];
+                }
+                queue = queue
+                  .then(() => {
+                    try {
+                      writeFileSync(file, JSON.stringify(list));
+                    } catch {}
+                  })
+                  .catch(() => {});
+                queue.then(() => send(200, { ok: true })).catch(() => send(500, { ok: false }));
+              });
+            } catch {}
+          },
+        });
+        webCtx.on('dispose', () => {
+          try {
+            dispose();
+          } catch {}
+        });
       } catch {}
     });
   } catch {}
@@ -251,6 +352,7 @@ function registerBgmRoute(ctx) {
  */
 export function apply(ctx) {
   registerBgmRoute(ctx);
+  registerGreetStateRoute(ctx);
   let style = '';
   try {
     style = buildBootStyle();

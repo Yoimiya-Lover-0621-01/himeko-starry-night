@@ -1761,12 +1761,60 @@ body[data-ds-dark-theme] [data-sws-composer] {
        and sending renders the card below. Only SHA-256
        digests of the accepted inputs ship in this repository: no name, no
        pinyin, and no reversible encoding. */
-    const GREET_LAST_KEY = 'dsh-star-wallpaper:greet-last';
-    const GREET_COOLDOWN_MS = 30 * 60 * 1000;
+    /* One blessing per name, ever: the digest list is grouped three entries per
+       name (full name, pinyin, name without surname), and a group that already
+       surfaced its card is remembered. A cookie carries that ledger across
+       ports, so restarting the app on a new port does not replay it. */
+    const GREET_GROUPS_PER_NAME = 3;
+    const GREET_DONE_KEY = 'dsh-star-wallpaper:greet-done';
+    const GREET_DONE_VERSION = 'v3';
+    const GREET_DONE_ROUTE = '/star-wallpaper/greet-state';
     const GREET_SALT = 'himeko-starry-night/' + String.fromCharCode(101, 103, 103) + '/v1';
     const GREET_DIGEST_BLOB =
       '613ca050f79389128eb883891e4c6304bb3f6d82b9c6320c1fdf8d781dfee0abab6256a7cdcbf17cb2a9dc4b4bbaf77eedd7c86e867d768352a5f9c8863570706b53b2620f32be39e6b08ae5b4092106d1a489c0286b1d2b3488d95aac17067940ab70e099f6ae5460fe55df4e9184ac180580292b3c869efaff4817cb1264b8592b399476017bf20fcebe96544a2acf76b149543ed6b404f29db2d28ca600ff097e682dcdfd043644f997760c1b7fe958798833438799071c2189dc2503831ec1a91d9596a6ef5407854ca41fa2a2c0739190299151c82183e5cb94616fc02966ab66a7f7977e5741df60a6d5cd1754180c6acc14111de022746031cc38d587b55aaf5d7b4d2d0b4cc14f4dc6d3cc290042903661ed747bc3caade67229fd5a96507ced9d917bd687ad0219cd0acd02b60ca4f59dc956c7da21dfb6321bf747f63aa3fd06442a2da5c1407a7c82fbd69540d8834c42430f159ea00ddb6c0d343e84712b63845ff78fb52f0ebcd1235c36a8294cb41ca02905701218e8f4339a2febadb7f58f5f976fdafbfd901f0bc09c4de4454a9c8454880f1027cafacc1edd79095993bd632cd4aab4f0d01999e432c437fc3c5a672e9d3edc5c963670d18782a5b8d9db9f7f30c660380a8197a4f7a7d9539764eeb11a126f177743533334369746a4ddf74895e983bc441d25897409a35842476c110657876905a0bc278c9fc2c2fef10cf9a12475e33baa01426b499fa3a3c518ff81421ec234031772395366a4adee1400a41cafc8d874e052d47038b841591cf31f5748af6e6319b5037a3e590e01fb868cb6408b3a4de337ee9b3c08c07a757ae4ff859c9f00828df255d78c25747639adf6a81def95ea8243c0283313f4157bfb9398ba1053677512a2cd31f35632f4e7c07354e7520570c21c1990410aa4a3ebbe3f7d7c1dcbc049727b14c5dd14a2c40a6a53971be65ad8446f98abcea57f61d5ce7534448ecf52c0b9ecdaf52794c9d48814c6446ac52715e5f93c577effe275086af54873272a23485c6b1ef43a66be89403bdc65c4dcb34dce9c32e2f42098f46240fbe0bd98a4f77a2c605464ac257219778b90b6d68e87dc50f20862b4109c83342cc6f5766964583c214e26237dff95c92f39d61aa964f56eccc70fdd648693d8611d62da197ff511acc9c5f62b6015c38ce91dd3dbf6a1df7bebed9da66196aeb8d0a75284d52bd7dc1f62296244cd1bf22ad90e6867f03f420a332ddbe3ba10dbe7409a1522fe04dfd3c145b346d39f24d6c9cbff8695c378aaf94e8e9b24d9a2c054aa88d781618933f78df0fc31b0d89e83583dbbc9ee6455c752182495a946756a';
     const GREET_DIGESTS = GREET_DIGEST_BLOB.match(/.{64}/g) || [];
+    function readGreetDoneLocal() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(GREET_DONE_KEY) ?? '[]');
+        return Array.isArray(parsed) ? parsed.filter((value) => Number.isInteger(value)) : [];
+      } catch {
+        return [];
+      }
+    }
+    function writeGreetDoneLocal(list) {
+      try {
+        localStorage.setItem(GREET_DONE_KEY, JSON.stringify(list));
+      } catch {}
+    }
+    /* The ledger is local-first: the browser storage always answers, and the
+       Host-side copy (same file across restarts) is merged in when it is
+       reachable. Both are just group indexes — never a name. */
+    async function loadGreetDone() {
+      const local = readGreetDoneLocal();
+      try {
+        const response = await fetch(GREET_DONE_ROUTE, { cache: 'no-store' });
+        if (!response.ok) return local;
+        const parsed = await response.json();
+        if (!Array.isArray(parsed)) return local;
+        const merged = new Set(local);
+        for (const value of parsed) {
+          if (Number.isInteger(value)) merged.add(value);
+        }
+        return Array.from(merged);
+      } catch {
+        return local;
+      }
+    }
+    function saveGreetDone(list) {
+      writeGreetDoneLocal(list);
+      try {
+        fetch(GREET_DONE_ROUTE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(list),
+        }).catch(() => {});
+      } catch {}
+    }
     const GREET_TEXT = [
       '很久很久以后，或许会突然意识到，谁对谁错，何是何非，',
       '由爱生疑，由疑生恨，或者难以释怀的背弃，无法谅解的谎言。',
@@ -1805,16 +1853,34 @@ body[data-ds-dark-theme] [data-sws-composer] {
         .toLowerCase();
     }
 
-    async function greetDigest(value) {
+    /* A name counts wherever it appears in a short message, so the whole text
+       is checked window by window. Only digests ship: no trigger word is
+       recoverable from this file. */
+    async function greetMatch(value) {
       const normalized = normalizeGreetText(value);
-      if (normalized === '') return '';
+      if (normalized === '') return [];
       const subtle = typeof crypto === 'undefined' ? undefined : crypto.subtle;
-      if (subtle === undefined) return '';
-      const data = new TextEncoder().encode(`${GREET_SALT}\u0000${normalized}`);
-      const hash = await subtle.digest('SHA-256', data);
-      return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+      if (subtle === undefined) return [];
+      const chars = Array.from(normalized);
+      if (chars.length > 160) return [];
+      const encoder = new TextEncoder();
+      const tried = new Set();
+      const groups = new Set();
+      const longest = Math.min(24, chars.length);
+      for (let length = 2; length <= longest; length += 1) {
+        for (let start = 0; start + length <= chars.length; start += 1) {
+          const window = chars.slice(start, start + length).join('');
+          if (tried.has(window)) continue;
+          tried.add(window);
+          const data = encoder.encode(`${GREET_SALT}\u0000${window}`);
+          const hash = await subtle.digest('SHA-256', data);
+          const hex = Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+          const index = GREET_DIGESTS.indexOf(hex);
+          if (index !== -1) groups.add(Math.floor(index / GREET_GROUPS_PER_NAME));
+        }
+      }
+      return Array.from(groups);
     }
-
     function GreetingOverlay() {
       const [visible, setVisible] = React.useState(false);
       const visibleRef = React.useRef(false);
@@ -1824,31 +1890,44 @@ body[data-ds-dark-theme] [data-sws-composer] {
         /* One-time reset per shipped revision: never boot with a cooldown
            timestamp left over from an earlier build. */
         try {
-          if (localStorage.getItem('dsh-star-wallpaper:greet-reset:v2') !== '1') {
-            localStorage.removeItem(GREET_LAST_KEY);
-            localStorage.setItem('dsh-star-wallpaper:greet-reset:v2', '1');
+          if (localStorage.getItem('dsh-star-wallpaper:greet-done-version') !== GREET_DONE_VERSION) {
+            localStorage.removeItem(GREET_DONE_KEY);
+            localStorage.setItem('dsh-star-wallpaper:greet-done-version', GREET_DONE_VERSION);
           }
         } catch {}
         const COMPOSER_SELECTOR =
-          '[contenteditable]:not([contenteditable="false"]), [data-lexical-editor="true"]';
+          '[contenteditable]:not([contenteditable="false"]), [data-lexical-editor="true"], [role="textbox"], textarea';
         let checking = false;
-        const fire = () => {
+        const fire = (groups) => {
           if (visibleRef.current) return;
-          const now = Date.now();
-          let last = 0;
-          try {
-            last = Number(localStorage.getItem(GREET_LAST_KEY) ?? '0');
-          } catch {}
-          if (Number.isFinite(last) && now - last < GREET_COOLDOWN_MS) return;
-          try {
-            localStorage.setItem(GREET_LAST_KEY, String(now));
-          } catch {}
-          setVisible(true);
+          if (!Array.isArray(groups) || groups.length === 0) return;
+          loadGreetDone()
+            .then((done) => {
+              if (visibleRef.current) return;
+              const fresh = groups.filter((group) => !done.includes(group));
+              if (fresh.length === 0) return;
+              saveGreetDone([...done, ...fresh]);
+              setVisible(true);
+            })
+            .catch(() => {});
+        };
+        const textOf = (node) => {
+          if (node === null || node === undefined) return '';
+          if (node.tagName === 'TEXTAREA' || node.tagName === 'INPUT') {
+            return String(node.value ?? '').trim();
+          }
+          return String(node.innerText || node.textContent || '').trim();
         };
         const composerText = () => {
           for (const editable of document.querySelectorAll(COMPOSER_SELECTOR)) {
             if (editable.closest('[role="dialog"]') !== null) continue;
-            const text = (editable.innerText || editable.textContent || '').trim();
+            const text = textOf(editable);
+            if (text !== '') return text;
+          }
+          /* Fallback: the focused editable, wherever the composer put it. */
+          const active = document.activeElement;
+          if (active instanceof Element) {
+            const text = textOf(active.closest(COMPOSER_SELECTOR) ?? active);
             if (text !== '') return text;
           }
           return '';
@@ -1858,10 +1937,10 @@ body[data-ds-dark-theme] [data-sws-composer] {
           const text = composerText();
           if (text === '') return;
           checking = true;
-          greetDigest(text)
-            .then((hex) => {
+          greetMatch(text)
+            .then((groups) => {
               checking = false;
-              if (hex !== '' && GREET_DIGESTS.includes(hex)) fire();
+              if (groups.length !== 0) fire(groups);
             })
             .catch(() => {
               checking = false;
@@ -1880,9 +1959,48 @@ body[data-ds-dark-theme] [data-sws-composer] {
           if (target.closest('[class~="RlGAzG_primary"], [type="submit"]') === null) return;
           checkOnSend();
         };
+        /* Typing the name is enough. Waiting for the send key was fragile: an
+           IME swallows the first Enter, and composers disagree about where the
+           caret lives. Both paths stay wired. */
+        let inputTimer = null;
+        const scheduleCheck = (delay) => {
+          if (inputTimer !== null) clearTimeout(inputTimer);
+          inputTimer = setTimeout(() => {
+            inputTimer = null;
+            checkOnSend();
+          }, delay);
+        };
+        const isComposerNode = (node) => node instanceof Element && node.closest(COMPOSER_SELECTOR) !== null;
+        const onInput = (event) => {
+          if (visibleRef.current) return;
+          if (!isComposerNode(event.target)) return;
+          scheduleCheck(260);
+        };
+        /* A paste inserts through the editor's own model and can arrive without
+           an input event the page sees, so nudge the check again afterwards. */
+        const onPasteLike = (event) => {
+          if (visibleRef.current) return;
+          if (!isComposerNode(event.target)) return;
+          scheduleCheck(180);
+          scheduleCheck(620);
+        };
+        const onCompositionEnd = (event) => {
+          if (visibleRef.current) return;
+          if (!isComposerNode(event.target)) return;
+          scheduleCheck(120);
+        };
+        document.addEventListener('input', onInput, true);
+        document.addEventListener('beforeinput', onPasteLike, true);
+        document.addEventListener('paste', onPasteLike, true);
+        document.addEventListener('compositionend', onCompositionEnd, true);
         document.addEventListener('keydown', onKey, true);
         document.addEventListener('pointerdown', onPointer, true);
         return () => {
+          if (inputTimer !== null) clearTimeout(inputTimer);
+          document.removeEventListener('input', onInput, true);
+          document.removeEventListener('beforeinput', onPasteLike, true);
+          document.removeEventListener('paste', onPasteLike, true);
+          document.removeEventListener('compositionend', onCompositionEnd, true);
           document.removeEventListener('keydown', onKey, true);
           document.removeEventListener('pointerdown', onPointer, true);
         };
