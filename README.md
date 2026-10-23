@@ -19,11 +19,12 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
   编辑菜单的撤销 / 重做 / 剪切 / 复制 / 粘贴 / 删除 / 全选均可用，不再出现系统原生灰菜单。
 - 设置里新增「关于」「退出」两栏（排在 Agent 预设下方）：「关于」展示版本、主题与壁纸信息，
   并提供检查更新；「退出」是真正退出应用的入口（会关闭整个 DeepSeek Harness）。
-- 设置里新增「背景」栏：星空是启程的地方，不是尽头。把本机的一张照片或一段视频铺成整扇窗的宇宙——
+- 设置里新增「背景」栏（面板名叫「星辰画布」）：星空是启程的地方，不是尽头。把本机的一张照片或一段视频铺成整扇窗的宇宙——
   照片缓慢漂移（Ken Burns），视频静音循环；底图之上仍是同一层深蓝玻璃蒙版，面板可读性不变。
-  文件只写在本机（`~/.dsh/star-wallpaper/`），不走网络、不进安装包；「恢复星云」一键回到姬子的星云。
-  换图后主题色也跟着走：皮肤配色按图片主色相整体旋转（亮度、饱和度不变，所以可读性不随照片变），
-  黑白或低饱和的图则保持姬子的靛蓝。设置壁纸后，启动屏的底图也会跟着换成这张照片。
+  支持 JPG / PNG / WebP / GIF / AVIF 与 MP4 / WebM，上限 512 MB；文件只写在本机（`~/.dsh/star-wallpaper/`），
+  不走网络、不进安装包；「恢复星云」一键回到姬子的星云。设置壁纸后，启动屏的底图也会跟着换成这张照片。
+- 主题色跟着照片走：换图后整张皮的色相按图片主色相整体旋转（亮度、饱和度不变，所以可读性不随照片变），
+  黑白或低饱和的图则保持姬子的靛蓝。取色在浏览器里完成——图片只为本机显示存一份，不会为了配色再上传一次。
 - 启动屏：宿主端通过 `webserver/index-inject` 注入一层 `[data-dsh-boot]` 作用域的样式，
   启动页不再是纯黑 HARNESS：星云壁纸 + 液态玻璃胶囊 + 官方 deepseek HARNESS 标志 + 鲸鱼尾巴
   加载动画 + 「正在点亮星月夜…」+ 底部主题落款。`dsh web` 首帧即生效；桌面端在下一次启动时
@@ -51,6 +52,10 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
 | 设置 · 关于 | 插件页 |
 | --- | --- |
 | ![设置里的「关于」栏：主题版本、壁纸与检查更新](preview-settings.png) | ![插件页：已安装的「姬子的星月夜」与实验性插件开关](preview-plugins.png) |
+
+| 自定义背景 · 照片 | 设置 · 背景（星辰画布） |
+| --- | --- |
+| ![把一张照片铺成整扇窗的宇宙：UI 色相跟着照片走](preview-background.jpg) | ![设置里的「背景」栏：预览、拖拽区与「恢复星云」](preview-background-settings.jpg) |
 
 ## 已知限制
 
@@ -101,6 +106,8 @@ DeepSeek Harness UI 的主题插件：星云壁纸 + 莫奈取色 + 液态玻璃
   如果要二次分发或商用，请自行替换为拥有授权的图片。
 - **deepseek HARNESS 标志**（`assets/brand-lockup.svg`）与**鲸鱼尾巴加载动画**（`assets/whale-tail.png`）：
   取自 DeepSeek Harness 官方前端资源，版权归 DeepSeek 所有，这里只用于本主题的界面装饰。
+- **README 例图里的自定义背景**（`preview-background.jpg`、`preview-background-settings.jpg`）：
+  取自游戏《原神》的官方美术，版权归米哈游（miHoYo）所有，仅用于演示「自定义背景」效果。
 - 其余 CSS / JS 代码与 `icon.svg` 为本项目原创，使用 MIT 许可证。
 
 ## 安装
@@ -127,5 +134,6 @@ dsh plugin add "D:\path\to\dsh-star-wallpaper"
 - `assets/brand-lockup.svg`：从官方品牌组件提取的 deepseek HARNESS 标志
 - `assets/whale-tail.png`：官方 28×28 鲸鱼尾巴 APNG（从 ui-chat 运行时样式提取）
 - `assets/whale-tail-still.svg`：同一只尾巴的静态 SVG（reduced-motion 回退）
-- `preview.png` / `preview-settings.png` / `preview-plugins.png`：README 里的界面截图（浏览器版）
+- `preview.png` / `preview-settings.png` / `preview-plugins.png` / `preview-background.jpg` /
+  `preview-background-settings.jpg`：README 里的界面截图（浏览器版）
 - `cordis.patch.yml`：把本插件挂进 bundle
