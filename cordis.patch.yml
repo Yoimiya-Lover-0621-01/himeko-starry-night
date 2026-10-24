@@ -2,3 +2,11 @@
 - insert:
     - id: star-wallpaper
       name: '@local/star-wallpaper'
+
+# 姬子的星月夜只在深色外观下成立：把宿主持久化的外观偏好默认改成深色，
+# 让「系统是浅色」的新机器首次装好就直接进入主题，不会再卡在浅色。
+# 这一行只改 bundle 层的默认值；用户自己的 cordis.patch.yml 仍可覆盖它。
+# 目标行 id 不存在时 Loader 只会警告并跳过，不会影响启动。
+- id: ui-theme
+  config:
+    preference: dark

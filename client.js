@@ -1634,8 +1634,10 @@ body[data-ds-dark-theme] [data-sws-composer] {
    data-*/role/aria only; no hashed class names. */
 [data-sws-hide] { display: none !important; }
 /* The palette is locked to dark; keep rc3's light/dark chooser out of the
-   dialog even when React re-renders it (structure match, no hashed classes). */
-[data-shortcut-modal] :is(div, section):has(> [class*="_cubeRow"]) { display: none !important; }
+   dialog even when React re-renders it (structure match, no hashed classes).
+   Only while the shell is really dark: on a light host the chooser must stay
+   reachable, or the user has no way to switch the appearance back to dark. */
+body[data-ds-dark-theme] [data-shortcut-modal] :is(div, section):has(> [class*="_cubeRow"]) { display: none !important; }
 /* One thin translucent fill over the artwork, exactly like the v1.1.0 sidebar:
    no blur, so the wallpaper stays recognisable instead of flattening out. */
 [data-sws-sidebar] {
@@ -2233,7 +2235,7 @@ body[data-sws-cosmos]::before {
        Settings -> About and window.__SWS_COMPAT__, and degrade the status
        honestly instead of silently painting half a theme. Never throw: a
        theme must not be able to take the host down. */
-    const THEME_VERSION = '1.2.0';
+    const THEME_VERSION = '1.2.1';
     const COMPAT = (() => {
       const state = {
         theme: THEME_VERSION,
@@ -2491,8 +2493,15 @@ body[data-sws-cosmos]::before {
     function tagAppearanceChooser(root) {
       /* The skin locks the palette to dark; rc3 draws the stock chooser again
          because the old hash rules are gone. Hide the group that offers
-         light / dark / follow-system, whatever its class names are. */
+         light / dark / follow-system, whatever its class names are.
+
+         The lock only holds while the page really is dark. A fresh profile
+         whose appearance preference still resolves to light (a light desktop
+         with the "system" default, or a profile patch overriding the bundle's
+         dark default) must keep the chooser visible — otherwise the user is
+         trapped on a palette this skin cannot render and has no way to switch. */
       try {
+        if (!document.body || !document.body.hasAttribute('data-ds-dark-theme')) return;
         const labels = ['浅色', '深色', '跟随系统'];
         const flat = (s) => String(s || '').replace(/\s+/g, '');
         const nodes = [];
