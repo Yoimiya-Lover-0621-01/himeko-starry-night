@@ -342,19 +342,31 @@ body[data-ds-dark-theme] [class~="wCInkW_panel"] {
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
 }
-/* Delivered-file cards: the stock fill is a solid opaque black; make them glass. */
-body[data-ds-dark-theme] [class~="flL80G_root"] {
+/* Delivered-file cards (the presented-files row under an assistant turn):
+   the stock fill is a solid opaque neutral, so they read as flat grey slabs
+   beside the glass bubbles. rc3 puts data-presented-file on the card and
+   derives its fill from --deliverable-fill / --deliverable-hover, so we
+   override those two variables on the card itself and add the same blur +
+   specular rim the other glass surfaces use. The old flL80G_* rules were
+   rc2 class hashes and had gone inert. */
+body[data-ds-dark-theme] [data-presented-file] {
   --deliverable-fill: rgba(255, 255, 255, 0.07) !important;
   --deliverable-hover: rgba(255, 255, 255, 0.14) !important;
-}
-body:not([data-ds-dark-theme]) [class~="flL80G_root"] {
-  --deliverable-fill: rgba(255, 255, 255, 0.40) !important;
-  --deliverable-hover: rgba(255, 255, 255, 0.60) !important;
-}
-[class~="flL80G_file"] {
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   backdrop-filter: blur(30px) saturate(150%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.02) 46%,
+    rgba(255, 255, 255, 0.05) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14) !important;
+}
+body:not([data-ds-dark-theme]) [data-presented-file] {
+  --deliverable-fill: rgba(255, 255, 255, 0.40) !important;
+  --deliverable-hover: rgba(255, 255, 255, 0.60) !important;
 }
 
 /* 'Open with File Explorer' split button: swap the colorful app logo for a
