@@ -668,6 +668,131 @@ function registerMediaRoute(ctx) {
   } catch {}
 }
 
+const SETTINGS_ROUTE = '/star-wallpaper/settings';
+const DIM_DEFAULT = 65;
+const DIM_MIN = 0;
+const DIM_MAX = 100;
+const DIM_FILE = 'settings.json';
+
+/**
+ * Where the canvas preferences live: one small JSON next to the picture, so a
+ * profile reset does not forget how dark the user wanted their sky.
+ * @returns absolute paths, or null when the home directory is unwritable.
+ */
+function settingsPaths() {
+  try {
+    const dir = join(homedir(), '.dsh', 'star-wallpaper');
+    mkdirSync(dir, { recursive: true });
+    return { dir, file: join(dir, DIM_FILE) };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Clamp a dim value coming from the slider, a text field or an old file.
+ * @param value - anything that should become a whole percent.
+ * @returns 0-100, or null when it is not a number at all.
+ */
+function clampDim(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  return Math.max(DIM_MIN, Math.min(DIM_MAX, Math.round(number)));
+}
+
+/**
+ * @returns the saved dim percentage, or the 65% default that matches the veil
+ *          the theme shipped with before the slider existed.
+ */
+function readDimSetting() {
+  const paths = settingsPaths();
+  if (!paths) return DIM_DEFAULT;
+  try {
+    const parsed = JSON.parse(readFileSync(paths.file, 'utf8'));
+    const dim = clampDim(parsed && parsed.dim);
+    return dim === null ? DIM_DEFAULT : dim;
+  } catch {
+    return DIM_DEFAULT;
+  }
+}
+
+/**
+ * The dim route: GET returns the saved percentage, POST stores a new one.
+ * The Client applies it live; this only makes the choice survive a reload.
+ * @param ctx - Host plugin context carrying the web server service.
+ */
+function registerSettingsRoute(ctx) {
+  try {
+    ctx.inject(['webServer'], (webCtx) => {
+      let webServer;
+      try {
+        webServer = typeof webCtx.get === 'function' ? webCtx.get('webServer') : webCtx.webServer;
+      } catch {
+        return;
+      }
+      if (!webServer || typeof webServer.register !== 'function') return;
+      const sendJson = (response, status, body) => {
+        response.statusCode = status;
+        response.setHeader('Content-Type', 'application/json; charset=utf-8');
+        response.setHeader('Cache-Control', 'no-store');
+        response.end(JSON.stringify(body));
+      };
+      try {
+        const dispose = webServer.register({
+          kind: 'exact',
+          path: SETTINGS_ROUTE,
+          handler(request, response) {
+            try {
+              if (request.method === 'GET' || request.method === 'HEAD') {
+                sendJson(response, 200, { ok: true, settings: { dim: readDimSetting() } });
+                return;
+              }
+              if (request.method !== 'POST') {
+                response.statusCode = 405;
+                response.setHeader('Allow', 'GET, HEAD, POST');
+                response.end();
+                return;
+              }
+              let raw = '';
+              request.on('data', (chunk) => {
+                if (raw.length < 4096) raw += chunk;
+              });
+              request.on('end', () => {
+                let dim = null;
+                try {
+                  const parsed = JSON.parse(raw);
+                  dim = clampDim(parsed && parsed.dim);
+                } catch {
+                  dim = null;
+                }
+                if (dim === null) {
+                  sendJson(response, 400, { ok: false, error: 'bad-dim' });
+                  return;
+                }
+                const paths = settingsPaths();
+                if (!paths) {
+                  sendJson(response, 500, { ok: false, error: 'store-failed' });
+                  return;
+                }
+                try {
+                  writeFileSync(paths.file, JSON.stringify({ dim }));
+                } catch {
+                  sendJson(response, 500, { ok: false, error: 'store-failed' });
+                  return;
+                }
+                sendJson(response, 200, { ok: true, settings: { dim } });
+              });
+            } catch {}
+          },
+        });
+        webCtx.on('dispose', () => {
+          try { dispose(); } catch {}
+        });
+      } catch {}
+    });
+  } catch {}
+}
+
 /**
  * Register the boot-splash stylesheet with the Web server's index renderer.
  * @param ctx - Host plugin context carrying the event bus.
@@ -676,6 +801,7 @@ export function apply(ctx) {
   registerBgmRoute(ctx);
   registerGreetStateRoute(ctx);
   registerMediaRoute(ctx);
+  registerSettingsRoute(ctx);
   /* The boot splash follows the canvas too: when the user picked a photo, the
      first frame of the app is theirs as well. Rebuilt on every index render,
      so a new picture needs only a reload — never a restart. A video keeps the

@@ -48,7 +48,7 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background-image:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.36) 0%, rgba(255, 255, 255, 0.40) 46%, rgba(255, 255, 255, 0.50) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, calc(0.36 * var(--sws-dim))) 0%, rgba(255, 255, 255, calc(0.40 * var(--sws-dim))) 46%, rgba(255, 255, 255, calc(0.50 * var(--sws-dim))) 100%),
     url("${WALLPAPER}");
   background-position: center center, 50% center;
   background-size: cover;
@@ -57,7 +57,7 @@ body::before {
 }
 body[data-ds-dark-theme]::before {
   background-image:
-    linear-gradient(180deg, rgba(7, 9, 20, 0.22) 0%, rgba(7, 9, 20, 0.12) 46%, rgba(7, 9, 20, 0.38) 100%),
+    linear-gradient(180deg, rgba(7, 9, 20, calc(0.22 * var(--sws-dim))) 0%, rgba(7, 9, 20, calc(0.12 * var(--sws-dim))) 46%, rgba(7, 9, 20, calc(0.38 * var(--sws-dim))) 100%),
     url("${WALLPAPER}");
   background-position: center center, 50% center;
   filter: saturate(1.2) contrast(1.03);
@@ -1107,6 +1107,16 @@ body[data-ds-dark-theme] [class*="CodeBlock"] {
   cursor: default;
 }
 
+/* Settings -> 背景 -> 压暗 */
+.sws-dim { margin-top: 16px; padding: 12px 14px 13px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); }
+.sws-dim-head { display: flex; align-items: center; gap: 10px; }
+.sws-dim-value { margin-left: auto; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-primary, #f1f2ff); }
+.sws-dim-control { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.sws-dim-range { flex: 1; height: 18px; margin: 0; accent-color: #4d6bff; cursor: pointer; }
+.sws-dim-input { appearance: none; width: 58px; height: 28px; padding: 0 8px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14); color: var(--dsw-alias-label-primary, #f1f2ff); font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
+.sws-dim-unit { flex: none; font-size: 12px; color: var(--dsw-alias-label-tertiary, #9ba1d9); }
+.sws-dim-note { margin-top: 8px; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-tertiary, #9ba1d9); }
+
 /* ===== Whale tail replaces every spinning loader =====================
    The official running indicator in the Chat is an APNG whale tail masked
    with currentColor. Reuse the exact same asset for every ring spinner in
@@ -1557,6 +1567,523 @@ body[data-ds-dark-theme] [data-sws-composer] {
 }
 
 
+/* ===== Step 1: settings / modal dialog (rc3 semantic container) =======
+   Scoped under the modal panel itself, so nothing outside a dialog changes. */
+[data-shortcut-modal] {
+  background-color: rgba(22, 24, 58, 0.92) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.035) 0%,
+    rgba(255, 255, 255, 0) 34%,
+    rgba(255, 255, 255, 0.015) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  backdrop-filter: blur(28px) saturate(140%);
+  border-radius: 16px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    0 28px 80px rgba(0, 0, 0, 0.50) !important;
+}
+/* The dialog is ONE flat surface: its content wrappers must not paint a second
+   translucent sheet, and cards only get the faintest navy lift, never glass. */
+[data-shortcut-modal] [class*="_content"],
+[data-shortcut-modal] [class*="_body"],
+[data-shortcut-modal] [class*="_scroll"] {
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+[data-shortcut-modal] [class*="_card"],
+[data-shortcut-modal] [class*="_field"],
+[data-shortcut-modal] [class*="_input"] {
+  background-color: rgba(46, 52, 122, 0.26) !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 0 0 0.5px rgba(150, 170, 255, 0.16) !important;
+}[data-shortcut-modal] [class*="_row"]:hover,
+[data-shortcut-modal] [class*="_option"]:hover {
+  border-radius: 10px !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.03) 40%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.07) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14) !important;
+}
+[data-shortcut-modal] button[aria-expanded="true"],
+[data-shortcut-modal] button[data-state="active"],
+[data-shortcut-modal] button[class*="_active"] {
+  border-radius: 9px !important;
+  background-color: rgba(58, 74, 190, 0.30) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 46%, rgba(255, 255, 255, 0.05) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(200, 214, 255, 0.36),
+    inset 0 0 0 0.5px rgba(150, 170, 255, 0.30) !important;
+}
+
+/* ===== Step 2: shell surfaces via rc3 semantic hooks ==================
+   data-*/role/aria only; no hashed class names. */
+[data-sws-hide] { display: none !important; }
+/* The palette is locked to dark; keep rc3's light/dark chooser out of the
+   dialog even when React re-renders it (structure match, no hashed classes). */
+[data-shortcut-modal] :is(div, section):has(> [class*="_cubeRow"]) { display: none !important; }
+/* One thin translucent fill over the artwork, exactly like the v1.1.0 sidebar:
+   no blur, so the wallpaper stays recognisable instead of flattening out. */
+[data-sws-sidebar] {
+  background-color: rgba(10, 12, 26, 0.24) !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: inset -0.5px 0 0 rgba(255, 255, 255, 0.10) !important;
+}
+[data-sws-newsession] {
+  background-color: rgba(56, 72, 196, 0.26) !important;
+  border-radius: 10px !important;
+  -webkit-backdrop-filter: blur(72px) saturate(150%);
+  backdrop-filter: blur(72px) saturate(150%);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0.025) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 6px 18px rgba(0, 0, 0, 0.18) !important;
+}
+[data-sws-newsession] > * { background: transparent !important; background-image: none !important; box-shadow: none !important; border-color: transparent !important; }
+[data-sws-newsession]:hover,
+[data-sws-newsession]:active,
+[data-sws-newsession]:focus-visible {
+  background-color: rgba(70, 88, 220, 0.34) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 46%, rgba(255, 255, 255, 0.08) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 6px 18px rgba(0, 0, 0, 0.18) !important;
+}
+[data-sws-nav-item], [data-sws-row] { border-radius: 10px !important; }
+[data-sws-nav-item]:hover, [data-sws-nav-item][aria-expanded="true"], [data-sws-nav-item][data-state="active"],
+[data-sws-row]:hover, [data-sws-row][aria-selected="true"], [data-sws-row][aria-current="true"], [data-sws-row][data-active="true"], [data-sws-row][data-state="active"], [data-sws-row][data-selected="true"] {
+  border-radius: 10px !important;
+  background-color: transparent !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(255, 255, 255, 0.02) 62%, rgba(255, 255, 255, 0.08) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.40), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+[data-sws-row] [data-sws-row], [data-sws-nav-item] [data-sws-nav-item] { background-image: none !important; box-shadow: none !important; }
+[data-sws-account] { border-radius: 12px !important; }
+[data-sws-account]:hover { background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0.05) 100%) !important; }
+[data-sws-titlebar] { background-color: transparent !important; }
+
+/* ===== Step 3: composer card in the theme's indigo glass =============
+   rc3 ships a teal-tinted card; the skin's identity is blue-violet. */
+[data-sws-composer] {
+  background-color: rgba(50, 64, 196, 0.28) !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 30%),
+    radial-gradient(120% 170% at 80% 120%, rgba(146, 92, 255, 0.26) 0%, rgba(146, 92, 255, 0) 62%) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 18px 44px rgba(0, 0, 0, 0.28) !important;
+}
+[data-sws-composer] [data-composer-input],
+[data-sws-composer] [data-composer-row] {
+  background-color: transparent !important;
+}
+
+/* ===== Step 8: exactly ONE glass layer in a dialog =====================
+   A. the dialog shell is opaque, B. the content pane is the only glass,
+   C. every row / card / field inside is flat. */
+[data-shortcut-modal] {
+  background-color: rgba(20, 22, 52, 1) !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+[data-shortcut-modal] > [class*="_content"] {
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+[data-shortcut-modal] [class*="_card"],
+[data-shortcut-modal] [class*="_rowCard"],
+[data-shortcut-modal] [class*="_field"],
+[data-shortcut-modal] [class*="_input"],
+[data-shortcut-modal] [class*="_row"] {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Sidebar glyphs: one uniform colour, hue carried by --sws-icon-filter. */
+[data-sws-nav-item] svg,
+[data-sws-newsession] svg,
+[data-sws-account] svg,
+[data-sws-row] svg {
+  filter: var(--sws-icon-filter, none) !important;
+}
+
+:root {
+  --sws-dim: 0.975; /* 65% = the veil the theme shipped with; 100% is 1.5x */
+}
+
+/* Dialog nav: selected row reads as tinted glass, not a grey block. */
+[data-shortcut-modal] button[class*="_active"] {
+  background-color: rgba(58, 74, 190, 0.42) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 48%, rgba(255, 255, 255, 0.06) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(200, 214, 255, 0.40),
+    inset 0 0 0 0.5px rgba(150, 170, 255, 0.34) !important;
+}
+
+/* ===== Desktop window chrome: one veil, no second frame tint ==========
+   DSH paints the caption band with --dsw-specific-sidebar-fill and the content
+   column with --dsw-alias-bg-base, so the band and the column end up one layer
+   apart and draw a seam. Neutralise both on the window frame: the window is
+   the wallpaper plus the single --sws-dim veil, glass stays where it belongs. */
+html[data-windows-titlebar] body {
+  --dsw-specific-sidebar-fill: rgba(10, 12, 26, 0) !important;
+  --dsw-alias-bg-base: rgba(10, 12, 26, 0) !important;
+}
+html[data-windows-titlebar] [class*="_frame"]::before {
+  background: transparent !important;
+}
+
+/* The caption band sits above the AppFrame padding: paint the sidebar's glass
+   across its width so the column reads as one surface from the very top. */
+#sws-window-band {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sws-sidebar-w, 0px);
+  height: var(--dsh-windows-titlebar-height, 40px);
+  z-index: 40;
+  pointer-events: none;
+  background-color: rgba(10, 12, 26, 0.24);
+  background-image: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: inset -0.5px 0 0 rgba(255, 255, 255, 0.10);
+}
+html[data-windows-titlebar] #sws-window-band { display: block; }
+
+/* Dialog content is flat: one opaque shell, no second translucent fill. */
+[data-sws-flat] {
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+/* ===== Settings content is FLAT, structurally =========================
+   Every container inside the dialog content pane loses its fill, blur and
+   shadow — no second glass layer can sneak in through a renamed class. Only
+   controls and the plugin's own .sws-* panels keep their material. */
+[data-shortcut-modal] > [class*="_content"] :is(div, section, ul, li):not([class*="sws-"]) {
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+[data-shortcut-modal] > [class*="_content"] :is(div, section, ul, li):not([class*="sws-"]) {
+  border-color: rgba(150, 170, 255, 0.10) !important;
+}
+[data-shortcut-modal] > [class*="_content"] :is(button, select, input, textarea) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* rc3 reuses the brand row as the new-session button (the logo carries
+   aria-label 新建会话), so the pill material landed on the logo. Strip it from
+   the brand element only — CSS-only, no tagger changes. */
+[data-sws-newsession][class*="_brand"],
+[data-sws-newsession][class*="_brand"] > * {
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* The brand lockup is one SVG that contains the HARNESS badge; the unified
+   icon filter washes its letters out, so the wordmark keeps its own colours. */
+[class*="_brand"] svg,
+[class*="_brandName"] svg,
+[class*="_brandIdentity"] svg {
+  filter: none !important;
+}
+
+/* ===== Chat + dock material (rc3 suffixes only) ====================== */
+/* The user's own bubble: same indigo glass language as the composer. */
+[data-chat-flow] [class*="_userRow"] [class*="_bubble"] {
+  background-color: rgba(56, 78, 200, 0.30) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 40%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  backdrop-filter: blur(28px) saturate(150%);
+  border-radius: 14px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(200, 214, 255, 0.24),
+    inset 0 0 0 0.5px rgba(150, 170, 255, 0.20),
+    0 6px 18px rgba(0, 0, 0, 0.18) !important;
+}
+/* The right dock is a glass pane, its tiles are glass cards. */
+[data-dockkit-pane] {
+  background-color: rgba(10, 12, 26, 0.22) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: inset 0.5px 0 0 rgba(255, 255, 255, 0.10) !important;
+}
+[data-dockkit-pane] [class*="_card"] {
+  background-color: rgba(26, 30, 74, 0.34) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  backdrop-filter: blur(28px) saturate(140%);
+  border-radius: 12px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 0.5px rgba(150, 170, 255, 0.14) !important;
+}
+
+/* Pane fullscreen: the chat composer and the usage dock must not float over
+   the dock page. */
+html[data-sws-dock-fullscreen] [data-composer-seat],
+html[data-sws-dock-fullscreen] [data-composer-dock],
+html[data-sws-dock-fullscreen] [data-conversation-region="composer"] {
+  display: none !important;
+}
+
+/* Dock entries: the cell flattens everything, the button itself is the one
+   transparent glass surface; glyphs ride the palette. */
+[data-dockkit-pane] [class*="_entryCell"] *,
+[data-dockkit-pane] [class*="_moreAnchor"] * {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+[data-dockkit-pane] [data-sidebar-right-guide-entry],
+[data-dockkit-pane] [class*="_moreAnchor"] > * {
+  background-color: rgba(24, 28, 70, 0.22) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 42%, rgba(255, 255, 255, 0.03) 100%) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(200, 214, 255, 0.18),
+    inset 0 0 0 0.5px rgba(150, 170, 255, 0.16),
+    0 6px 18px rgba(0, 0, 0, 0.14) !important;
+}
+[data-dockkit-pane] [data-sidebar-right-guide-entry] svg,
+[data-dockkit-pane] [class*="_moreAnchor"] svg {
+  filter: grayscale(1) sepia(1) hue-rotate(var(--sws-icon-rotate, 192deg)) saturate(5) brightness(1.0) !important;
+}
+[data-dockkit-pane] [class*="_hero"] svg {
+  filter: brightness(0) invert(1) !important;
+}
+
+/* Chat text sits directly on the artwork; a tight shadow keeps 16px CJK
+   glyphs crisp without bringing the pane back. */
+[data-conversation-region="chat"] [class*="_markdown"] {
+  text-shadow: 0 1px 2px rgba(4, 6, 18, 0.55), 0 0 3px rgba(4, 6, 18, 0.28);
+}
+[data-conversation-region="chat"] [class*="_markdown"] code,
+[data-conversation-region="chat"] [class*="_markdown"] pre,
+[data-conversation-region="chat"] [class*="_markdown"] pre * {
+  text-shadow: none;
+}
+
+/* Usage dock: the v1.1.0 glass pill, restored as one capsule. */
+[data-composer-dock] {
+  margin-top: 2px !important;
+  background-color: rgba(50, 64, 196, 0.26) !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 34%),
+    radial-gradient(120% 170% at 80% 120%, rgba(146, 92, 255, 0.22) 0%, rgba(146, 92, 255, 0) 62%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  border-radius: 999px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    inset 0 0 0 0.5px rgba(150, 170, 255, 0.18) !important;
+}
+
+/* The composer and the usage dock keep their native layout positions: a
+   visual lift used to overlap the queue / interjection panels above them. */
+
+/* The composer is lifted visually; give the conversation tail the same
+   clearance so the last message never slides under it. */
+[data-conversation-region="chat"] [data-chat-flow] {
+  padding-bottom: 20px !important;
+}
+
+/* Conversation header controls: liquid-glass hover + the same unified icon
+   treatment for every glyph, including the file-manager bitmap icon. */
+header[data-window-drag] :is(button, [role="button"]):not([class*="_tab"]):hover,
+header[data-window-drag] :is(button, [role="button"]):not([class*="_tab"])[aria-expanded="true"] {
+  border-radius: 9px !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.02) 62%,
+    rgba(255, 255, 255, 0.08) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16) !important;
+}
+header[data-window-drag] :is(button, [role="button"]) svg,
+header[data-window-drag] :is(button, [role="button"]) img {
+  filter: var(--sws-icon-filter, none) !important;
+}
+
+
+/* Toolbar icon buttons and primary actions: liquid glass instead of flat fills. */
+[class*="_iconButton"]:hover,
+[class*="_iconButton"][aria-expanded="true"] {
+  border-radius: 9px !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(255, 255, 255, 0.02) 62%, rgba(255, 255, 255, 0.08) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16) !important;
+}
+[class*="_primary_"] {
+  background-color: rgba(74, 98, 226, 0.34) !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 46%, rgba(255, 255, 255, 0.08) 100%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.20),
+    0 6px 18px rgba(0, 0, 0, 0.20) !important;
+}
+[class*="_primary_"]:hover {
+  background-color: rgba(96, 120, 250, 0.46) !important;
+}
+/* Plugin rows: glass highlight on hover / focus. */
+li[class*="_card"]:hover,
+li[class*="_card"]:focus-visible {
+  background-color: rgba(60, 78, 200, 0.20) !important;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 72%) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 0.5px rgba(150, 170, 255, 0.16) !important;
+}
+/* Sharpen text rendering a touch: Windows subpixel smoothing on composited layers. */
+body {
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+/* Task pages (自动化任务 etc.): search field and task rows are glass surfaces. */
+[class*="_searchField"] {
+  background-color: rgba(10, 12, 26, 0.30) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  border-radius: 12px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(200, 214, 255, 0.14),
+    inset 0 0 0 0.5px rgba(150, 170, 255, 0.14) !important;
+}
+button:has([class*="_rowTitle"]) {
+  background-color: rgba(18, 21, 52, 0.34) !important;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 70%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  border-radius: 12px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 0.5px rgba(150, 170, 255, 0.14) !important;
+}
+button:has([class*="_rowTitle"]):hover {
+  background-color: rgba(52, 66, 190, 0.30) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    inset 0 0 0 0.5px rgba(160, 180, 255, 0.28) !important;
+}
+[class*="_filterTab"]:hover,
+[class*="_filterTab"][class*="_filterTabActive"] {
+  border-radius: 14px !important;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 44%, rgba(255, 255, 255, 0.08) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Settings dialogs are flat: no glass layer anywhere inside them. */
+[data-shortcut-modal],
+[data-shortcut-modal] * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Settings dialogs: the selected nav row is a flat tint, no glass at all. */
+[data-shortcut-modal] button[class*="_active"] {
+  background-color: rgba(96, 116, 230, 0.20) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+/* DSH's question / choice card: the composer's glass language. */
+[class*="_card"]:has([class*="_options"]) {
+  background-color: rgba(50, 64, 196, 0.28) !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 30%),
+    radial-gradient(120% 170% at 80% 120%, rgba(146, 92, 255, 0.22) 0%, rgba(146, 92, 255, 0) 62%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  backdrop-filter: blur(28px) saturate(150%);
+  border-radius: 16px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 18px 44px rgba(0, 0, 0, 0.28) !important;
+}
+/* Keep only the card surface and the options panel: rows, the answer field,
+   the footer strip and their highlights are flat. */
+/* The minimised question bar keeps the same glass as the full card. */
+[class*="_cardMinimized"] {
+  background-color: rgba(50, 64, 196, 0.28) !important;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 30%),
+    radial-gradient(120% 170% at 80% 120%, rgba(146, 92, 255, 0.20) 0%, rgba(146, 92, 255, 0) 62%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  border-radius: 14px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.30),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.16),
+    0 14px 36px rgba(0, 0, 0, 0.26) !important;
+}
+[class*="_option"],
+[class*="_optionSelected"],
+[class*="_optionCopy"],
+[class*="_optionLine"],
+[class*="_footer"],
+[class*="_footerActions"] {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+/* More clearance so the streaming tail never slides under the lifted composer. */
+[data-conversation-region="chat"] [data-chat-flow] {
+  padding-bottom: 44px !important;
+}
+[data-conversation-scroll] {
+  scroll-padding-bottom: 64px;
+}
+
 /* ===== Cosmos canvas: your own photo or video behind the shell ========
    The navigation tabs and every glass surface still float on the same
    liquid-glass film; what changes underneath is the sky itself. */
@@ -1594,8 +2121,8 @@ body[data-sws-cosmos]::before {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(120% 100% at 50% 30%, rgba(6, 8, 22, 0.08) 0%, rgba(4, 5, 14, 0.52) 100%),
-    linear-gradient(180deg, rgba(7, 9, 22, 0.34) 0%, rgba(7, 9, 22, 0.20) 44%, rgba(7, 9, 22, 0.46) 100%);
+    radial-gradient(120% 100% at 50% 30%, rgba(6, 8, 22, calc(0.08 * var(--sws-dim))) 0%, rgba(4, 5, 14, calc(0.52 * var(--sws-dim))) 100%),
+    linear-gradient(180deg, rgba(7, 9, 22, calc(0.34 * var(--sws-dim))) 0%, rgba(7, 9, 22, calc(0.2 * var(--sws-dim))) 44%, rgba(7, 9, 22, calc(0.46 * var(--sws-dim))) 100%);
 }
 @keyframes sws-cosmos-drift {
   from { transform: scale(1.01) translate3d(0, 0, 0); }
@@ -1706,7 +2233,7 @@ body[data-sws-cosmos]::before {
        Settings -> About and window.__SWS_COMPAT__, and degrade the status
        honestly instead of silently painting half a theme. Never throw: a
        theme must not be able to take the host down. */
-    const THEME_VERSION = '1.1.0';
+    const THEME_VERSION = '1.2.0';
     const COMPAT = (() => {
       const state = {
         theme: THEME_VERSION,
@@ -1724,11 +2251,11 @@ body[data-sws-cosmos]::before {
       // The required anchors are visible on every session state (welcome or
       // conversation); the optional ones only inside a conversation.
       const ANCHORS = [
-        ['sidebar', '[class*="_2H3hWW_"]', true],
-        ['composer', '[class*="RlGAzG_"]', true],
-        ['account chip', '[class*="ET65mq_"]', true],
-        ['session header', '[class*="Dc7zOa_"]', false],
-        ['usage dock', '[class*="iq1doa_"]', false],
+        ['sidebar', 'nav[aria-label="全局面板"], [data-sws-sidebar], [class*="_2H3hWW_"]', true],
+        ['composer', '[data-sws-composer], [data-composer-card="true"], [class*="RlGAzG_"]', true],
+        ['account chip', '[data-sws-account], [aria-label="账号菜单"], [class*="ET65mq_"]', true],
+        ['session header', '[data-conversation-region="chat"], [class*="Dc7zOa_"]', false],
+        ['usage dock', '[data-dockkit-surface], [class*="iq1doa_"]', false],
       ];
       const has = (selector) => {
         try { return !!document.querySelector(selector); } catch { return false; }
@@ -1804,6 +2331,13 @@ body[data-sws-cosmos]::before {
       ['[class*="dzXS4q_button"]', 'data-sws-chip'],
       ['[class*="Dc7zOa_headerUtilities"] button', 'data-sws-chip'],
       ['[class*="Dc7zOa_headerCorner"] button', 'data-sws-chip'],
+      /* rc3 semantic hooks: data-*, role and aria labels instead of hashes */
+      ['nav[aria-label="全局面板"] button', 'data-sws-nav-item'],
+      ['[aria-label="新建会话"]', 'data-sws-newsession'],
+      ['[role="treeitem"]', 'data-sws-row'],
+      ['[aria-label="账号菜单"]', 'data-sws-account'],
+      ['[data-composer-card="true"]', 'data-sws-composer'],
+      ['[data-window-drag]', 'data-sws-titlebar'],
     ];
     /* A burst this large is cheaper to answer with one full pass than with
        dozens of scoped queries. */
@@ -1842,13 +2376,139 @@ body[data-sws-cosmos]::before {
     function tagSubtree(root) {
       for (const entry of TAGGED) tagIn(root, entry[0], entry[1]);
       tagComposerIn(root);
+      tagSidebarColumn(root);
+      tagAppearanceChooser(root);
+      tagFlatSurfaces(root);
+      markDockFullscreen();
     }
     function runTaggers() {
       try {
         const root = document.body || document.documentElement;
         if (!root) return;
         tagComposerIn(root);
+        tagSidebarColumn(root);
+        tagAppearanceChooser(root);
+        tagFlatSurfaces(root);
+        markDockFullscreen();
         for (const entry of TAGGED) tagIn(root, entry[0], entry[1]);
+      } catch {}
+    }
+    function tagSidebarColumn(root) {
+      try {
+        const navs = [];
+        if (root.matches && root.matches('nav[aria-label="全局面板"]')) navs.push(root);
+        for (const node of root.querySelectorAll('nav[aria-label="全局面板"]')) navs.push(node);
+        for (const nav of navs) {
+          /* Prefer the AppFrame column (full height) over the nav block; the
+             suffix survives DSH's class-hash rebuild. */
+          let column = null;
+          try { column = nav.closest('[class*="_sidebarCol"]'); } catch {}
+          if (column === null || column === undefined) {
+            let parent = nav.parentElement;
+            for (let i = 0; parent && i < 6; i += 1, parent = parent.parentElement) {
+              const rect = parent.getBoundingClientRect();
+              if (rect.width >= 240 && rect.width <= 360 && rect.height >= window.innerHeight * 0.82) { column = parent; break; }
+            }
+          }
+          if (column) {
+            mark(column, 'data-sws-sidebar');
+            try {
+              document.documentElement.style.setProperty('--sws-sidebar-w', Math.round(column.getBoundingClientRect().width) + 'px');
+            } catch {}
+          }
+        }
+      } catch {}
+      try {
+        if (!document.documentElement.hasAttribute('data-windows-titlebar')) return;
+        if (document.getElementById('sws-window-band')) return;
+        const band = document.createElement('div');
+        band.id = 'sws-window-band';
+        (document.body || document.documentElement).append(band);
+      } catch {}
+    }
+    function installDockFullscreenWatch() {
+      /* The observer above batches DOM work; the pane toggle must repaint the
+         stray composer/usage dock on the very next frame, not 180ms later. */
+      let frame = 0;
+      const apply = () => {
+        if (frame !== 0) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          markDockFullscreen();
+        });
+      };
+      markDockFullscreen();
+      let observer = null;
+      try {
+        observer = new MutationObserver(apply);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-sidebar-right-mode'] });
+        observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['data-sidebar-right-mode'] });
+      } catch {}
+      try { document.addEventListener('click', apply, true); } catch {}
+      try { window.addEventListener('resize', apply); } catch {}
+      return () => {
+        try { if (observer) observer.disconnect(); } catch {}
+        try { document.removeEventListener('click', apply, true); } catch {}
+        try { window.removeEventListener('resize', apply); } catch {}
+      };
+    }    function markDockFullscreen() {
+      /* rc3's pane fullscreen keeps the chat composer and the usage dock on
+         screen, floating over the pane. Detect the layout (no clicks) and let
+         CSS hide those two strays. */
+      try {
+        const exit = document.querySelector('button[aria-label="退出全屏"]');
+        const pane = document.querySelector('[data-dockkit-pane]');
+        const wide = pane !== null && pane.getBoundingClientRect().width >= window.innerWidth * 0.85;
+        document.documentElement.toggleAttribute('data-sws-dock-fullscreen', !!(exit || wide));
+      } catch {}
+    }    function tagFlatSurfaces(root) {
+      /* Whatever rc3 paints inside a dialog (sections, field groups, cards with
+         their own class-hash suffixes) gets flattened here: the dialog is one
+         opaque surface, its content is transparent, nothing gets a second
+         translucent fill. Runs on mutations, so newly mounted panes follow. */
+      try {
+        const dialogs = [];
+        if (root.matches && root.matches('[data-shortcut-modal]')) dialogs.push(root);
+        if (root.querySelectorAll) dialogs.push(...root.querySelectorAll('[data-shortcut-modal]'));
+        for (const dialog of dialogs) {
+          for (const el of dialog.querySelectorAll('*')) {
+            const tag = el.tagName;
+            if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || tag === 'SVG' || tag === 'IMG') continue;
+            if (el.hasAttribute('data-sws-sidebar')) continue;
+            const rect = el.getBoundingClientRect();
+            if (rect.width < 160 || rect.height < 32) continue;
+            const cs = getComputedStyle(el);
+            const bg = cs.backgroundColor || '';
+            const alphaMatch = /rgba?\([^)]*,\s*([0-9.]+)\s*\)/.exec(bg);
+            const hasFill = alphaMatch ? Number(alphaMatch[1]) > 0.02 : (bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)');
+            if (hasFill || cs.backgroundImage !== 'none' || (cs.backdropFilter && cs.backdropFilter !== 'none')) {
+              if (!el.hasAttribute('data-sws-flat')) el.setAttribute('data-sws-flat', '');
+            }
+          }
+        }
+      } catch {}
+    }
+    function tagAppearanceChooser(root) {
+      /* The skin locks the palette to dark; rc3 draws the stock chooser again
+         because the old hash rules are gone. Hide the group that offers
+         light / dark / follow-system, whatever its class names are. */
+      try {
+        const labels = ['浅色', '深色', '跟随系统'];
+        const flat = (s) => String(s || '').replace(/\s+/g, '');
+        const nodes = [];
+        if (root.querySelectorAll) nodes.push(...root.querySelectorAll('button, [role="tab"], [role="radio"], span, div'));
+        if (root.matches && root.matches('button, [role="tab"], [role="radio"], span, div')) nodes.push(root);
+        for (const node of nodes) {
+          if (!labels.includes(flat(node.textContent))) continue;
+          let parent = node.parentElement;
+          for (let i = 0; parent && i < 5; i += 1, parent = parent.parentElement) {
+            const all = flat(parent.textContent);
+            if (all.includes('外观') && all.includes('浅色') && all.includes('深色') && all.includes('跟随系统')) {
+              mark(parent, 'data-sws-hide');
+              break;
+            }
+          }
+        }
       } catch {}
     }
     function installTagger() {
@@ -1995,6 +2655,49 @@ body[data-sws-cosmos]::before {
     let cosmosMedia = null;
     let cosmosMediaKey = '';
     const cosmosListeners = new Set();
+    const COSMOS_SETTINGS_ROUTE = '/star-wallpaper/settings';
+    const DIM_DEFAULT = 65;
+    const DIM_SAVE_DELAY = 400;
+    const DIM_STORAGE_KEY = 'sws-star-wallpaper-dim';
+    let dimLevel = DIM_DEFAULT;
+    let dimSaveTimer = null;
+    const dimListeners = new Set();
+    /* 65% is the old maximum (1.5x the base veil); 100% is 1.5x of that. */
+    function dimFactor(level) { return (Math.max(0, Math.min(100, level)) / 65) * 1.5; }
+    function applyDimLevel(level, persist = true) {
+      const number = Number(level);
+      dimLevel = Number.isFinite(number) ? Math.max(0, Math.min(100, Math.round(number))) : DIM_DEFAULT;
+      try { document.documentElement.style.setProperty('--sws-dim', String(dimFactor(dimLevel))); } catch {}
+      try { localStorage.setItem(DIM_STORAGE_KEY, String(dimLevel)); } catch {}
+      if (persist) scheduleDimSave();
+      for (const listener of Array.from(dimListeners)) { try { listener(); } catch {} }
+    }
+    function subscribeDim(listener) { dimListeners.add(listener); return () => { dimListeners.delete(listener); }; }
+    function scheduleDimSave() {
+      if (dimSaveTimer !== null) clearTimeout(dimSaveTimer);
+      dimSaveTimer = setTimeout(() => { dimSaveTimer = null; saveDimLevel(dimLevel); }, DIM_SAVE_DELAY);
+    }
+    async function saveDimLevel(level) {
+      try { await fetch(COSMOS_SETTINGS_ROUTE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dim: level }) }); } catch {}
+    }
+    function restoreDimLevel() {
+      let level = DIM_DEFAULT;
+      try {
+        const raw = localStorage.getItem(DIM_STORAGE_KEY);
+        const stored = raw === null ? NaN : Number(raw);
+        if (Number.isFinite(stored) && stored >= 0 && stored <= 100) level = Math.round(stored);
+      } catch {}
+      applyDimLevel(level, false);
+    }
+    async function loadDimLevel() {
+      try {
+        const response = await fetch(COSMOS_SETTINGS_ROUTE, { cache: 'no-store' });
+        if (!response.ok) return;
+        const parsed = await response.json();
+        const dim = parsed && parsed.ok === true && parsed.settings ? parsed.settings.dim : undefined;
+        if (Number.isFinite(Number(dim))) applyDimLevel(Number(dim), false);
+      } catch {}
+    }
 
     /* ===== Palette: the theme colour follows the canvas ================
        The skin writes its colours as literal rgba() triples. They are
@@ -2006,8 +2709,9 @@ body[data-sws-cosmos]::before {
     const PALETTE_HUE_MIN = 185;
     const PALETTE_HUE_MAX = 290;
     const PALETTE_MIN_SATURATION = 0.12;
-    const PALETTE_MIN_SHIFT = 12;
     const THEME_BASE_HUE = 232;
+    const SEED_BASE_CHROMA = 45;
+    const SEED_MIN_COVERAGE = 40;
     const paletteColors = new Map();
 
     function rgbToHsl(r, g, b) {
@@ -2049,10 +2753,53 @@ body[data-sws-cosmos]::before {
         Math.round(hueToRgb(x, y, hue - 1 / 3) * 255),
       ];
     }
-    function shiftHue(rgb, shift) {
-      const hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
-      return hslToRgb(((hsl[0] + shift) % 360 + 360) % 360, hsl[1], hsl[2]);
+
+    /* ===== CIELAB: the perceptual space the seed mapping works in ======== */
+    function srgbToLinear(value) {
+      const channel = value / 255;
+      return channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
     }
+    function linearToSrgb(value) {
+      const channel = Math.min(1, Math.max(0, value));
+      return channel <= 0.0031308 ? channel * 12.92 : 1.055 * Math.pow(channel, 1 / 2.4) - 0.055;
+    }
+    function rgbToLab(r, g, b) {
+      const lr = srgbToLinear(r);
+      const lg = srgbToLinear(g);
+      const lb = srgbToLinear(b);
+      let x = (lr * 0.4124 + lg * 0.3576 + lb * 0.1805) / 0.95047;
+      let y = lr * 0.2126 + lg * 0.7152 + lb * 0.0722;
+      let z = (lr * 0.0193 + lg * 0.1192 + lb * 0.9505) / 1.08883;
+      const f = (v) => (v > 0.008856 ? Math.cbrt(v) : 7.787 * v + 16 / 116);
+      x = f(x); y = f(y); z = f(z);
+      return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+    }
+    function labToRgb(l, a, b) {
+      const y = (l + 16) / 116;
+      const x = y + a / 500;
+      const z = y - b / 200;
+      const inv = (v) => { const cube = v * v * v; return cube > 0.008856 ? cube : (v - 16 / 116) / 7.787; };
+      const X = inv(x) * 0.95047;
+      const Y = inv(y);
+      const Z = inv(z) * 1.08883;
+      const rl = X * 3.2406 + Y * -1.5372 + Z * -0.4986;
+      const gl = X * -0.9689 + Y * 1.8758 + Z * 0.0415;
+      const bl = X * 0.0557 + Y * -0.204 + Z * 1.057;
+      return [
+        Math.round(linearToSrgb(rl) * 255),
+        Math.round(linearToSrgb(gl) * 255),
+        Math.round(linearToSrgb(bl) * 255),
+      ];
+    }
+    function rgbToLch(r, g, b) {
+      const lab = rgbToLab(r, g, b);
+      return [lab[0], Math.hypot(lab[1], lab[2]), (((Math.atan2(lab[2], lab[1]) * 180) / Math.PI) + 360) % 360];
+    }
+    function lchToRgb(l, c, hue) {
+      const radians = (hue * Math.PI) / 180;
+      return labToRgb(l, c * Math.cos(radians), c * Math.sin(radians));
+    }
+
     function tokenizePalette(css) {
       const defaults = [];
       const tokenized = css.replace(/rgba\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3}),\s*([0-9]*\.?[0-9]+)\)/g, (match, red, green, blue, alpha) => {
@@ -2073,72 +2820,98 @@ body[data-sws-cosmos]::before {
     }
     const THEME_CSS = tokenizePalette(CSS);
 
-    let paletteHue = null;
-    function applyCosmosPalette(targetHue) {
+    /* ===== Material-style dynamic colour ================================
+       The wallpaper becomes a seed: the area-weighted mean hue and chroma of
+       its saturated pixels in CIELAB. The skin palette keeps every token's
+       tone (L*) and takes the seed's hue, with chroma scaled by the seed's
+       intensity — the same idea as Material's dynamic tonal mapping. */
+    let paletteSeed = null;
+    function applyCosmosSeed(seed) {
       try {
         const root = document.documentElement;
         if (root === null) return;
-        let shift = 0;
-        if (Number.isFinite(targetHue) && cosmosMeta.has === true) {
-          shift = ((((targetHue - THEME_BASE_HUE) % 360) + 540) % 360) - 180;
-          if (Math.abs(shift) < PALETTE_MIN_SHIFT) shift = 0;
-        }
-        if (shift === 0) {
+        if (!seed || !Number.isFinite(seed.hue)) {
           for (const name of paletteColors.keys()) root.style.removeProperty(name);
-          paletteHue = null;
+          root.style.removeProperty('--sws-icon-filter');
+          root.style.removeProperty('--sws-icon-filter-color');
+          root.style.removeProperty('--sws-icon-rotate');
+          paletteSeed = null;
           return;
         }
+        const chroma = Number.isFinite(seed.chroma) ? seed.chroma : SEED_BASE_CHROMA;
+        const ratio = Math.min(1.7, Math.max(0.45, chroma / SEED_BASE_CHROMA));
         for (const [name, rgb] of paletteColors) {
-          const shifted = shiftHue(rgb, shift);
-          root.style.setProperty(name, shifted[0] + ', ' + shifted[1] + ', ' + shifted[2]);
+          const lch = rgbToLch(rgb[0], rgb[1], rgb[2]);
+          const next = lchToRgb(lch[0], Math.min(110, Math.max(2, lch[1] * ratio)), seed.hue);
+          root.style.setProperty(name, next[0] + ', ' + next[1] + ', ' + next[2]);
         }
-        paletteHue = targetHue;
+        const iconHue = ((seed.hue % 360) + 360) % 360;
+        const rotate = (((iconHue - 40) % 360) + 360) % 360;
+        const saturate = Math.min(6, Math.max(2.6, 2.2 + chroma / 24));
+        root.style.setProperty(
+          '--sws-icon-filter',
+          'grayscale(1) brightness(1.85) sepia(1) hue-rotate(' + Math.round(rotate) + 'deg) saturate(' + saturate.toFixed(2) + ')',
+        );
+        root.style.setProperty(
+          '--sws-icon-filter-color',
+          'grayscale(1) sepia(1) hue-rotate(' + Math.round(rotate) + 'deg) saturate(' + Math.min(6, saturate + 0.8).toFixed(2) + ') brightness(1.02)',
+        );
+        root.style.setProperty('--sws-icon-rotate', Math.round(rotate) + 'deg');
+        paletteSeed = seed;
       } catch {}
     }
-    function sampleMediaHue(media) {
+    function sampleMediaSeed(media) {
       try {
         const canvas = document.createElement('canvas');
-        canvas.width = 48;
-        canvas.height = 48;
+        canvas.width = 96;
+        canvas.height = 96;
         const context = canvas.getContext('2d', { willReadFrequently: true });
         if (!context) return null;
-        context.drawImage(media, 0, 0, 48, 48);
-        const pixels = context.getImageData(0, 0, 48, 48).data;
-        const bins = new Array(36).fill(0);
-        let total = 0;
-        for (let index = 0; index < pixels.length; index += 4) {
-          if (pixels[index + 3] < 200) continue;
-          const hsl = rgbToHsl(pixels[index], pixels[index + 1], pixels[index + 2]);
-          if (hsl[1] < 0.16 || hsl[2] < 0.10 || hsl[2] > 0.90) continue;
-          const mid = 1 - Math.abs(hsl[2] - 0.5) * 2;
-          const weight = hsl[1] * (0.35 + 0.65 * mid);
-          const bin = Math.min(35, Math.floor(hsl[0] / 10));
-          bins[bin] += weight;
-          total += weight;
-        }
-        if (total < 24) return null;
-        let best = 0;
-        for (let index = 1; index < 36; index += 1) if (bins[index] > bins[best]) best = index;
+        context.drawImage(media, 0, 0, 96, 96);
+        const pixels = context.getImageData(0, 0, 96, 96).data;
         let x = 0;
         let y = 0;
-        for (let offset = -1; offset <= 1; offset += 1) {
-          const bin = (best + offset + 36) % 36;
-          if (bins[bin] <= 0) continue;
-          const radians = (((bin + 0.5) * 10) * Math.PI) / 180;
-          x += Math.cos(radians) * bins[bin];
-          y += Math.sin(radians) * bins[bin];
+        let chromaSum = 0;
+        let count = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index + 3] < 200) continue;
+          const lab = rgbToLab(pixels[index], pixels[index + 1], pixels[index + 2]);
+          if (lab[0] < 5 || lab[0] > 96) continue;
+          const chroma = Math.hypot(lab[1], lab[2]);
+          if (chroma < 8) continue;
+          const hue = Math.atan2(lab[2], lab[1]);
+          x += Math.cos(hue);
+          y += Math.sin(hue);
+          chromaSum += chroma;
+          count += 1;
         }
+        if (count < SEED_MIN_COVERAGE) return null;
         if (x === 0 && y === 0) return null;
-        return (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+        return {
+          hue: (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360,
+          chroma: chromaSum / count,
+          coverage: count,
+        };
       } catch {
         return null;
       }
     }
+    let defaultWallpaperSeedDone = false;
+    function sampleDefaultWallpaperSeed() {
+      try {
+        if (defaultWallpaperSeedDone) return;
+        defaultWallpaperSeedDone = true;
+        const image = new Image();
+        image.decoding = 'async';
+        image.onload = () => {
+          try { applyCosmosSeed(sampleMediaSeed(image)); } catch {}
+        };
+        image.src = typeof WALLPAPER === 'string' ? WALLPAPER : '';
+      } catch {}
+    }
     function sampleCosmosHue(media) {
       if (media !== cosmosMedia) return;
-      const hue = sampleMediaHue(media);
-      if (hue === null) return;
-      applyCosmosPalette(hue);
+      applyCosmosSeed(sampleMediaSeed(media));
     }
 
     function cosmosSnapshot() {
@@ -2218,7 +2991,7 @@ body[data-sws-cosmos]::before {
       if (!meta.has) {
         cleanCosmosMedia();
         cosmosMediaKey = '';
-        applyCosmosPalette(null);
+        applyCosmosSeed(null);
         try {
           layer.removeAttribute('data-ready');
           layer.removeAttribute('data-kind');
@@ -2254,7 +3027,7 @@ body[data-sws-cosmos]::before {
           });
           media.addEventListener('error', () => {
             try { layer.removeAttribute('data-ready'); } catch {}
-            applyCosmosPalette(null);
+            applyCosmosSeed(null);
           });
         } else {
           media = document.createElement('img');
@@ -2267,7 +3040,7 @@ body[data-sws-cosmos]::before {
           });
           media.addEventListener('error', () => {
             try { layer.removeAttribute('data-ready'); } catch {}
-            applyCosmosPalette(null);
+            applyCosmosSeed(null);
           });
         }
         media.src = source;
@@ -2293,6 +3066,8 @@ body[data-sws-cosmos]::before {
         cosmosMeta = parsed.meta;
         mountCosmosMedia();
         emitCosmos();
+        if (cosmosMeta.has !== true) sampleDefaultWallpaperSeed();
+        else defaultWallpaperSeedDone = false;
       } catch {}
     }
     function uploadCosmosFile(file, onProgress) {
@@ -2354,6 +3129,8 @@ body[data-sws-cosmos]::before {
         cosmosMeta = { has: false };
         mountCosmosMedia();
         emitCosmos();
+        defaultWallpaperSeedDone = false;
+        sampleDefaultWallpaperSeed();
         return { ok: response.ok && (!body || body.ok !== false) };
       } catch {
         return { ok: false, error: 'network' };
@@ -2363,6 +3140,8 @@ body[data-sws-cosmos]::before {
       let disposed = false;
       const start = () => {
         if (disposed) return;
+        restoreDimLevel();
+        loadDimLevel();
         ensureCosmosLayer();
         mountCosmosMedia();
         loadCosmosMeta();
@@ -2389,7 +3168,7 @@ body[data-sws-cosmos]::before {
         try { document.removeEventListener('visibilitychange', onVisibility); } catch {}
         cleanCosmosMedia();
         cosmosMediaKey = '';
-        applyCosmosPalette(null);
+        applyCosmosSeed(null);
         try { if (cosmosLayer) cosmosLayer.remove(); } catch {}
         cosmosLayer = null;
         try { document.body.removeAttribute('data-sws-cosmos'); } catch {}
@@ -3027,9 +3806,11 @@ body[data-sws-cosmos]::before {
       const [progress, setProgress] = React.useState(-1);
       const [error, setError] = React.useState('');
       const [hover, setHover] = React.useState(false);
+      const [dim, setDim] = React.useState(dimLevel);
       const imageInput = React.useRef(null);
       const videoInput = React.useRef(null);
       React.useEffect(() => subscribeCosmos(() => setSnapshot(cosmosSnapshot())), []);
+      React.useEffect(() => subscribeDim(() => setDim(dimLevel)), []);
       React.useEffect(() => {
         loadCosmosMeta();
       }, []);
@@ -3185,7 +3966,23 @@ body[data-sws-cosmos]::before {
                 )
               : null,
           ),
-          h('input', { ref: imageInput, type: 'file', accept: 'image/*', style: { display: 'none' }, onChange: fromInput }),
+          h('div', { className: 'sws-dim' },
+            h('div', { className: 'sws-dim-head' },
+              h('span', { className: 'sws-row-label' }, tr('压暗', 'Dimming')),
+              h('span', { className: 'sws-dim-value' }, dim + '%'),
+            ),
+            h('div', { className: 'sws-dim-control' },
+              h('input', { className: 'sws-dim-range', type: 'range', min: 0, max: 100, step: 1, value: dim, onChange: (event) => applyDimLevel(Number(event.currentTarget.value)) }),
+              h('input', { className: 'sws-dim-input', type: 'number', min: 0, max: 100, step: 1, value: dim, onChange: (event) => {
+                const raw = event.currentTarget.value;
+                if (raw === '') return;
+                const number = Number(raw);
+                if (Number.isFinite(number)) applyDimLevel(number);
+              } }),
+              h('span', { className: 'sws-dim-unit' }, '%'),
+            ),
+            h('div', { className: 'sws-dim-note' }, tr('0% 不压暗；65% 约等于原先最深的默认，100% 再深约 1.5 倍。', '0% leaves the picture untouched; 65% matches the old maximum, 100% is about 1.5x deeper.')),
+          ),          h('input', { ref: imageInput, type: 'file', accept: 'image/*', style: { display: 'none' }, onChange: fromInput }),
           h('input', { ref: videoInput, type: 'file', accept: 'video/*', style: { display: 'none' }, onChange: fromInput }),
           busy
             ? h('div', { className: 'sws-bg-progress' }, tr('正在写入本机… ', 'Saving on this machine… ') + progress + '%')
@@ -3329,6 +4126,21 @@ body[data-sws-cosmos]::before {
         // goes stale. Fail-soft; disposed with the plugin.
         let stopTagger = null;
         try { stopTagger = installTagger(); } catch {}
+        let stopDockWatch = null;
+        try { stopDockWatch = installDockFullscreenWatch(); } catch {}
+        ctx.on('dispose', () => { try { if (stopDockWatch) stopDockWatch(); } catch {} });
+        /* Dialogs mount after boot; rescan for a while so late sections
+           (the appearance chooser) still get their semantic tags. */
+        let rescanTimer = null;
+        try {
+          let ticks = 0;
+          rescanTimer = setInterval(() => {
+            ticks += 1;
+            try { runTaggers(); } catch {}
+            if (ticks > 24) { clearInterval(rescanTimer); rescanTimer = null; }
+          }, 1500);
+        } catch {}
+        ctx.on('dispose', () => { try { if (rescanTimer) clearInterval(rescanTimer); } catch {} });
         ctx.on('dispose', () => { try { if (stopTagger) stopTagger(); } catch {} });
         /* The cosmos canvas: the user's own photo or video, mounted behind the
            shell and kept in sync with the Host-side canvas routes. */
