@@ -31,6 +31,13 @@ window.__ModuleLoader__.load({
     const WHALE_STILL = '__WHALE_STILL_DATA_URI__';
 
     const CSS = `
+:root {
+  /* The Host half points --swt-splash-image at the user's own photo so the
+     first frame after the boot splash keeps the canvas instead of flashing
+     back to the packaged nebula (the media route is already warm then). The
+     Client swaps it back to this default whenever the canvas is not a photo. */
+  --swt-default-image: url("${WALLPAPER}");
+}
 html {
   background-color: #0a0917 !important;
   background-image: none !important;
@@ -49,7 +56,7 @@ body::before {
   pointer-events: none;
   background-image:
     linear-gradient(180deg, rgba(255, 255, 255, calc(0.36 * var(--sws-dim))) 0%, rgba(255, 255, 255, calc(0.40 * var(--sws-dim))) 46%, rgba(255, 255, 255, calc(0.50 * var(--sws-dim))) 100%),
-    url("${WALLPAPER}");
+    var(--swt-splash-image, var(--swt-default-image));
   background-position: center center, 50% center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -58,7 +65,7 @@ body::before {
 body[data-ds-dark-theme]::before {
   background-image:
     linear-gradient(180deg, rgba(7, 9, 20, calc(0.22 * var(--sws-dim))) 0%, rgba(7, 9, 20, calc(0.12 * var(--sws-dim))) 46%, rgba(7, 9, 20, calc(0.38 * var(--sws-dim))) 100%),
-    url("${WALLPAPER}");
+    var(--swt-splash-image, var(--swt-default-image));
   background-position: center center, 50% center;
   filter: saturate(1.2) contrast(1.03);
 }
@@ -3001,10 +3008,22 @@ body[data-sws-cosmos]::before {
         media.remove();
       } catch {}
     }
+    /* The Host half paints the first frame after the boot splash with the
+       user's photo; now that the Client knows what the canvas really is, keep
+       that first frame for a photo or drop back to the packaged nebula. The
+       Cosmos layer covers body::before while a photo or video is mounted. */
+    function syncSplashImage(meta) {
+      try {
+        const root = document.documentElement;
+        if (meta && meta.has === true && meta.kind === 'image') root.style.removeProperty('--swt-splash-image');
+        else root.style.setProperty('--swt-splash-image', 'var(--swt-default-image)');
+      } catch {}
+    }
     function mountCosmosMedia() {
       const layer = ensureCosmosLayer();
       if (layer === null) return;
       const meta = cosmosSnapshot();
+      syncSplashImage(meta);
       try {
         if (meta.has) document.body.setAttribute('data-sws-cosmos', meta.kind);
         else document.body.removeAttribute('data-sws-cosmos');

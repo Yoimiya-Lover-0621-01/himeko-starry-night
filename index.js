@@ -190,6 +190,33 @@ ${whaleReducedMotion}
 `;
 }
 
+/**
+ * Styles that outlive the boot splash.
+ *
+ * The first app frame used to paint the packaged nebula and only then fetch the
+ * user's photo, so a moment after the splash the canvas jumped back to the
+ * nebula. Handing the media route (already warm from the splash) to
+ * `--swt-splash-image` lets that frame keep the photo; the Client resets the
+ * variable whenever the canvas is not a photo.
+ *
+ * The account feature also paints a full-screen onboarding veil while it reads
+ * its local snapshot. In wallpaper mode that veil is transparent, so the only
+ * thing visible is its "loading settings" line over the canvas — hide exactly
+ * that stage and let the splash hand straight over to the theme.
+ *
+ * @param custom - media route URL of the user's photo, or '' when none.
+ * @returns the handoff CSS text.
+ */
+function buildHandoffStyle(custom) {
+  const splash = custom === '' ? '' : `:root { --swt-splash-image: url("${custom}"); }`;
+  return `/* ── 姬子的星月夜 · boot handoff ───────────────────────────────────── */
+${splash}
+[class*="_onboardingOverlay"]:has(> [class*="_onboardingStage"] > [role="status"]:only-child) {
+  display: none !important;
+}
+`;
+}
+
 const AMBIENT_ROUTE = '/star-wallpaper/ambient.mp3';
 
 /**
@@ -819,7 +846,7 @@ export function apply(ctx) {
       bootKey = key;
       bootStyle = '';
       try {
-        bootStyle = buildBootStyle(custom);
+        bootStyle = buildBootStyle(custom) + buildHandoffStyle(custom);
       } catch {
         bootStyle = '';
       }
